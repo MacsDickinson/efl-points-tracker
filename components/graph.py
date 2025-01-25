@@ -32,8 +32,9 @@ def plot_cumulative_points(points_df):
             teams_points = match_data[['team', 'points']].values.tolist()
             # Sort by points in descending order
             teams_points.sort(key=lambda x: x[1], reverse=True)
-            # Format as "team - points"
-            hover_data[match] = "<br>".join([f"{team} - {int(points)}" for team, points in teams_points])
+            # Format as "position. team - points"
+            hover_data[match] = "<br>".join([f"{pos+1}. {team} - {int(points)}" 
+                                           for pos, (team, points) in enumerate(teams_points)])
 
     # Add traces for each team
     for team in points_df['team'].unique():
