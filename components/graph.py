@@ -98,7 +98,13 @@ def plot_cumulative_points(points_df):
             linecolor='rgba(255, 255, 255, 0.2)',
             tickfont=dict(size=12)
         ),
-        hovermode='x unified',
+        hoverdistance=100,  # Reduce hover "catch" distance
+        hovermode='closest',  # Change to closest instead of unified
+        hoverlabel=dict(
+            bgcolor='rgba(17, 17, 17, 0.95)',
+            bordercolor='rgba(255, 255, 255, 0.2)',
+            font=dict(size=12, family="Arial, sans-serif")
+        ),
         legend=dict(
             yanchor="top",
             y=0.99,
