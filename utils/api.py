@@ -10,50 +10,57 @@ FOOTBALL_API_BASE = "https://api-football-v1.p.rapidapi.com/v3"
 def get_league_matches(league_id, season):
     """
     Fetch match data for a specific league and season
-    Using a mock API response for demonstration
-    In production, replace with actual API calls
     """
-    # Mock data generation for demonstration
-    teams = ["Arsenal", "Chelsea", "Liverpool", "Man City", "Man United", 
-             "Tottenham", "Leicester", "West Ham", "Everton", "Leeds"]
+    headers = {
+        "X-RapidAPI-Key": st.secrets["RAPIDAPI_KEY"],
+        "X-RapidAPI-Host": "api-football-v1.p.rapidapi.com"
+    }
 
-    matches = []
-    current_date = datetime(2022, 8, 1)  # Season start date
+    try:
+        # Get all fixtures for the league and season
+        response = requests.get(
+            f"{FOOTBALL_API_BASE}/fixtures",
+            headers=headers,
+            params={
+                "league": league_id,
+                "season": season,
+                "status": "FT"  # Only completed matches
+            }
+        )
+        response.raise_for_status()
 
-    # Generate matches for approximately 38 weeks (standard season length)
-    for week in range(38):
-        # Each week has 5 matches (10 teams = 5 matches per week)
-        teams_this_week = teams.copy()
-        np.random.shuffle(teams_this_week)
+        fixtures = response.json()["response"]
+        matches = []
 
-        for i in range(0, len(teams_this_week), 2):
-            home_team = teams_this_week[i]
-            away_team = teams_this_week[i + 1]
-
-            home_score = np.random.randint(0, 5)
-            away_score = np.random.randint(0, 5)
-
+        for fixture in fixtures:
             match = {
-                'date': current_date.strftime('%Y-%m-%d'),
-                'home_team': home_team,
-                'away_team': away_team,
-                'home_score': home_score,
-                'away_score': away_score,
+                'date': fixture['fixture']['date'][:10],  # YYYY-MM-DD format
+                'home_team': fixture['teams']['home']['name'],
+                'away_team': fixture['teams']['away']['name'],
+                'home_score': fixture['goals']['home'],
+                'away_score': fixture['goals']['away'],
             }
             matches.append(match)
 
-        # Increment by one week
-        current_date = pd.Timestamp(current_date) + pd.DateOffset(days=7)
+        return pd.DataFrame(matches)
 
-    return pd.DataFrame(matches)
+    except requests.exceptions.RequestException as e:
+        st.error(f"Error fetching match data: {str(e)}")
+        # Return empty DataFrame with correct columns
+        return pd.DataFrame(columns=['date', 'home_team', 'away_team', 'home_score', 'away_score'])
 
+@st.cache_data(ttl=3600)
 def get_available_leagues():
     """Return available leagues for selection"""
     return {
         "39": "Premier League",
         "40": "Championship",
+        "41": "League One",
+        "42": "League Two",
     }
 
 def get_available_seasons():
     """Return available seasons for selection"""
-    return ["2022", "2021", "2020"]
+    current_year = datetime.now().year
+    # Return last 4 seasons including current
+    return [str(year) for year in range(current_year - 3, current_year + 1)]
