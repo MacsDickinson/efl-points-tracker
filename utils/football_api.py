@@ -61,3 +61,60 @@ def fetch_matches_from_api(league_id, season):
     except requests.exceptions.RequestException as e:
         st.error(f"⚠️ Error fetching match data: {str(e)}")
         return pd.DataFrame()
+
+def fetch_standings_from_api(league_id, season):
+    """Fetch current standings from the API"""
+    try:
+        headers = {
+            "X-RapidAPI-Key": os.getenv("RAPIDAPI_KEY"),
+            "X-RapidAPI-Host": "api-football-v1.p.rapidapi.com"
+        }
+
+        response = requests.get(
+            f"{FOOTBALL_API_BASE}/standings",
+            headers=headers,
+            params={
+                "league": league_id,
+                "season": season
+            },
+            timeout=10
+        )
+
+        if response.status_code == 401:
+            st.error("⚠️ Invalid API key. Please check your RapidAPI key.")
+            return pd.DataFrame()
+
+        response.raise_for_status()
+        data = response.json()
+
+        if "response" not in data or not data["response"]:
+            st.error("⚠️ No standings data available")
+            return pd.DataFrame()
+
+        # Extract standings from the first league found
+        league_standings = data["response"][0]["league"]["standings"]
+        if not league_standings:
+            return pd.DataFrame()
+
+        # Use the first standings table (in case of multiple groups)
+        standings = league_standings[0]
+
+        standings_data = []
+        for team in standings:
+            standings_data.append({
+                'team_name': team['team']['name'],
+                'team_id': team['team']['id'],
+                'position': team['rank'],
+                'points': team['points'],
+                'matches_played': team['all']['played'],
+                'goals_for': team['all']['goals']['for'],
+                'goals_against': team['all']['goals']['against'],
+                'goal_difference': team['goalsDiff'],
+                'form': team.get('form', '')[-5:] if team.get('form') else None  # Last 5 matches
+            })
+
+        return pd.DataFrame(standings_data)
+
+    except requests.exceptions.RequestException as e:
+        st.error(f"⚠️ Error fetching standings data: {str(e)}")
+        return pd.DataFrame()

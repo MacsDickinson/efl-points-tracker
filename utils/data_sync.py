@@ -1,9 +1,9 @@
 import pandas as pd
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
-from db.models import League, Team, Match
+from db.models import League, Team, Match, Standings
 from db.database import get_db
-from utils.football_api import fetch_matches_from_api
+from utils.football_api import fetch_matches_from_api, fetch_standings_from_api
 from utils.dev_mode import log_error, is_dev_mode
 import streamlit as st
 
@@ -101,6 +101,9 @@ def sync_matches(league_id: int, season: int):
             # Commit each batch
             db.commit()
 
+        # Sync standings after matches are synced
+        sync_standings(db, league_id, season)
+
         # Clear progress bar
         progress_bar.empty()
 
@@ -113,6 +116,73 @@ def sync_matches(league_id: int, season: int):
             raise Exception("Failed to update match data") from e
     finally:
         db.close()
+
+def sync_standings(db: Session, league_id: int, season: int):
+    """Sync standings data from the API"""
+    try:
+        # Fetch current standings from API
+        standings_df = fetch_standings_from_api(league_id, season)
+        if standings_df.empty:
+            return
+
+        # Get league
+        league = db.query(League).filter_by(api_id=league_id).first()
+        if not league:
+            return
+
+        # Get existing teams dictionary
+        existing_teams = {
+            t.api_id: t.id 
+            for t in db.query(Team).filter_by(league_id=league.id).all()
+        }
+
+        # Update standings for each team
+        for _, row in standings_df.iterrows():
+            team_id = existing_teams.get(row['team_id'])
+            if not team_id:
+                continue
+
+            # Get existing standing or create new one
+            standing = (
+                db.query(Standings)
+                .filter_by(season=season, league_id=league.id, team_id=team_id)
+                .first()
+            )
+
+            if standing:
+                # Update existing standing
+                standing.position = row['position']
+                standing.points = row['points']
+                standing.matches_played = row['matches_played']
+                standing.goals_for = row['goals_for']
+                standing.goals_against = row['goals_against']
+                standing.goal_difference = row['goal_difference']
+                standing.form = row['form']
+                standing.last_updated = datetime.utcnow()
+            else:
+                # Create new standing
+                standing = Standings(
+                    season=season,
+                    league_id=league.id,
+                    team_id=team_id,
+                    position=row['position'],
+                    points=row['points'],
+                    matches_played=row['matches_played'],
+                    goals_for=row['goals_for'],
+                    goals_against=row['goals_against'],
+                    goal_difference=row['goal_difference'],
+                    form=row['form'],
+                    last_updated=datetime.utcnow()
+                )
+                db.add(standing)
+
+        db.commit()
+
+    except Exception as e:
+        db.rollback()
+        error_msg = log_error("Failed to sync standings", e)
+        if is_dev_mode():
+            raise Exception(error_msg) from e
 
 def get_or_create_team(db: Session, team_name: str, team_api_id: int, league_id: int, 
                       existing_teams: dict = None):
@@ -193,6 +263,17 @@ def needs_refresh(league_id: int, season: int) -> bool:
         )
 
         if next_match and next_match.date <= (datetime.now() + timedelta(days=1)).date():
+            return True
+
+        # Also check if standings need refresh (older than 1 hour)
+        latest_standing = (
+            db.query(Standings)
+            .filter_by(league_id=league.id, season=season)
+            .order_by(Standings.last_updated.desc())
+            .first()
+        )
+
+        if not latest_standing or latest_standing.last_updated < datetime.utcnow() - timedelta(hours=1):
             return True
 
         return False

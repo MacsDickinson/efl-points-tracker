@@ -1,4 +1,6 @@
 import pandas as pd
+from db.database import get_db
+from db.models import Standings
 
 def calculate_cumulative_points(matches_df):
     """Calculate cumulative points and goal statistics for each team over time"""
@@ -8,60 +10,81 @@ def calculate_cumulative_points(matches_df):
     # Sort matches by actual date played
     matches_df = matches_df.sort_values('date')
 
-    teams = set(matches_df['home_team'].unique()) | set(
-        matches_df['away_team'].unique())
-    points_data = []
+    # Get database session
+    db = next(get_db())
 
-    for team in teams:
-        # Get all matches involving this team
-        team_matches = matches_df[(matches_df['home_team'] == team) | (
-            matches_df['away_team'] == team)].sort_values('date')
+    try:
+        # Get all dates where we have matches
+        all_dates = sorted(matches_df['date'].unique())
+        points_data = []
 
-        points = []
-        cumulative_points = 0
-        cumulative_goals_for = 0
-        cumulative_goals_against = 0
-        matches_played = 0
+        # Process each date
+        for date in all_dates:
+            # Get matches up to this date
+            matches_to_date = matches_df[matches_df['date'] <= date]
+            teams = set(matches_to_date['home_team'].unique()) | set(matches_to_date['away_team'].unique())
 
-        for _, match in team_matches.iterrows():
-            matches_played += 1
-            if match['home_team'] == team:
-                team_goals = match['home_score']
-                opponent_goals = match['away_score']
-                if team_goals > opponent_goals:
-                    points_earned = 3
-                elif team_goals == opponent_goals:
-                    points_earned = 1
-                else:
-                    points_earned = 0
-            else:  # team is away
-                team_goals = match['away_score']
-                opponent_goals = match['home_score']
-                if team_goals > opponent_goals:
-                    points_earned = 3
-                elif team_goals == opponent_goals:
-                    points_earned = 1
-                else:
-                    points_earned = 0
+            for team in teams:
+                # Get all matches involving this team up to this date
+                team_matches = matches_to_date[(matches_to_date['home_team'] == team) | 
+                                             (matches_to_date['away_team'] == team)].sort_values('date')
 
-            cumulative_points += points_earned
-            cumulative_goals_for += team_goals
-            cumulative_goals_against += opponent_goals
-            goal_difference = cumulative_goals_for - cumulative_goals_against
+                matches_played = len(team_matches)
 
-            points.append({
-                'team': team,
-                'date': match['date'],
-                'points': cumulative_points,
-                'matches_played': matches_played,
-                'goals_for': cumulative_goals_for,
-                'goals_against': cumulative_goals_against,
-                'goal_difference': goal_difference
-            })
+                # Calculate goals and points from matches
+                cumulative_goals_for = 0
+                cumulative_goals_against = 0
+                calculated_points = 0
 
-        points_data.extend(points)
+                for _, match in team_matches.iterrows():
+                    if match['home_team'] == team:
+                        team_goals = match['home_score']
+                        opponent_goals = match['away_score']
+                        if team_goals > opponent_goals:
+                            calculated_points += 3
+                        elif team_goals == opponent_goals:
+                            calculated_points += 1
+                    else:  # team is away
+                        team_goals = match['away_score']
+                        opponent_goals = match['home_score']
+                        if team_goals > opponent_goals:
+                            calculated_points += 3
+                        elif team_goals == opponent_goals:
+                            calculated_points += 1
 
-    return pd.DataFrame(points_data)
+                    cumulative_goals_for += team_goals
+                    cumulative_goals_against += opponent_goals
+
+                # Get the latest standings for this team
+                latest_standing = (
+                    db.query(Standings)
+                    .join(Standings.team)
+                    .filter(Standings.team.has(name=team))
+                    .order_by(Standings.last_updated.desc())
+                    .first()
+                )
+
+                # If we have standings data and the matches_played matches, use the official points
+                points = latest_standing.points if (latest_standing and 
+                    latest_standing.matches_played == matches_played) else calculated_points
+
+                goal_difference = cumulative_goals_for - cumulative_goals_against
+
+                points_data.append({
+                    'team': team,
+                    'date': date,
+                    'points': points,
+                    'matches_played': matches_played,
+                    'goals_for': cumulative_goals_for,
+                    'goals_against': cumulative_goals_against,
+                    'goal_difference': goal_difference,
+                    'form': latest_standing.form if latest_standing else None
+                })
+
+        return pd.DataFrame(points_data)
+
+    finally:
+        db.close()
 
 def get_team_colors():
     """Return consistent colors for teams across all leagues"""
@@ -86,6 +109,7 @@ def get_team_colors():
         "Tottenham": "#132257",
         "West Ham": "#7A263A",
         "Wolves": "#FDB913",
+        # Championship teams
         "Birmingham": "#0000FF",
         "Blackburn": "#009EE0",
         "Bristol City": "#E21C38",
@@ -109,50 +133,4 @@ def get_team_colors():
         "Swansea": "#121212",
         "Watford": "#FBEE23",
         "West Brom": "#122F67",
-        "Barnsley": "#E41E26",
-        "Blackpool": "#FF6634",
-        "Bolton": "#012169",
-        "Burton": "#FDE725",
-        "Cambridge United": "#FFCD00",
-        "Carlisle": "#0066B3",
-        "Charlton": "#FF0000",
-        "Cheltenham": "#FF0000",
-        "Derby": "#000000",
-        "Exeter": "#E31837",
-        "Fleetwood": "#FF0000",
-        "Lincoln": "#E31837",
-        "Northampton": "#7B2C3A",
-        "Oxford United": "#FFF200",
-        "Peterborough": "#002E60",
-        "Port Vale": "#0066B3",
-        "Portsmouth": "#001489",
-        "Reading": "#004494",
-        "Shrewsbury": "#002F87",
-        "Stevenage": "#FF0000",
-        "Wigan": "#009EE0",
-        "Wycombe": "#1C3C7D",
-        "AFC Wimbledon": "#002A5C",
-        "Accrington": "#A51D35",
-        "Bradford": "#FF0000",
-        "Colchester": "#00529F",
-        "Crawley": "#FF0000",
-        "Crewe": "#DD0000",
-        "Doncaster": "#FF0000",
-        "Forest Green": "#0F4D2B",
-        "Gillingham": "#002F87",
-        "Grimsby": "#1B1B1B",
-        "Harrogate": "#FED204",
-        "Leyton Orient": "#EE2737",
-        "Mansfield": "#FDB913",
-        "MK Dons": "#FF0000",
-        "Morecambe": "#FF0000",
-        "Newport": "#FDB913",
-        "Notts County": "#000000",
-        "Oldham": "#004494",
-        "Salford": "#FF0000",
-        "Stockport": "#004494",
-        "Sutton": "#FDB913",
-        "Swindon": "#FF0000",
-        "Tranmere": "#004494",
-        "Wrexham": "#FF0000"
     }
