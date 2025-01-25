@@ -6,7 +6,7 @@ Base = declarative_base()
 
 class League(Base):
     __tablename__ = 'leagues'
-    
+
     id = Column(Integer, primary_key=True)
     api_id = Column(Integer, unique=True, nullable=False)
     name = Column(String, nullable=False)
@@ -15,18 +15,22 @@ class League(Base):
 
 class Team(Base):
     __tablename__ = 'teams'
-    
+
     id = Column(Integer, primary_key=True)
-    api_id = Column(Integer, unique=True, nullable=False)
+    api_id = Column(Integer, nullable=False)  # Removed unique constraint
     name = Column(String, nullable=False)
     league_id = Column(Integer, ForeignKey('leagues.id'), nullable=False)
     league = relationship("League", back_populates="teams")
     home_matches = relationship("Match", back_populates="home_team", foreign_keys="Match.home_team_id")
     away_matches = relationship("Match", back_populates="away_team", foreign_keys="Match.away_team_id")
 
+    __table_args__ = (
+        UniqueConstraint('api_id', 'league_id', name='uix_team_api_league'),
+    )
+
 class Match(Base):
     __tablename__ = 'matches'
-    
+
     id = Column(Integer, primary_key=True)
     api_id = Column(Integer, unique=True, nullable=False)
     date = Column(Date, nullable=False)
@@ -37,7 +41,7 @@ class Match(Base):
     home_score = Column(Integer)
     away_score = Column(Integer)
     status = Column(String, nullable=False)  # FT for finished, NS for not started, etc.
-    
+
     league = relationship("League", back_populates="matches")
     home_team = relationship("Team", back_populates="home_matches", foreign_keys=[home_team_id])
     away_team = relationship("Team", back_populates="away_matches", foreign_keys=[away_team_id])

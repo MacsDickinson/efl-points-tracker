@@ -17,7 +17,8 @@ SessionLocal = scoped_session(session_factory)
 
 # Create tables
 def init_db():
-    Base.metadata.create_all(bind=engine)
+    Base.metadata.drop_all(bind=engine)  # Drop all tables
+    Base.metadata.create_all(bind=engine)  # Create tables with new schema
 
 def get_db():
     db = SessionLocal()
