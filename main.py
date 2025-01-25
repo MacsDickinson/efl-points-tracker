@@ -1,7 +1,16 @@
 import streamlit as st
+import os
 from utils.api import get_league_matches, get_available_leagues, get_available_seasons
 from utils.data_processor import calculate_cumulative_points
 from components.graph import plot_cumulative_points, display_team_stats
+from db.database import init_db
+
+# Initialize database with error handling
+try:
+    init_db()
+except Exception as e:
+    st.error(f"Failed to initialize database: {str(e)}")
+    st.stop()
 
 st.set_page_config(page_title="Football League Dashboard",
                    page_icon="⚽",
@@ -43,6 +52,7 @@ st.markdown("""
     </style>
     """,
             unsafe_allow_html=True)
+
 
 
 def main():
