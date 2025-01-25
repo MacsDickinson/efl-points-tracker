@@ -67,6 +67,7 @@ def plot_cumulative_points(points_df):
                 ),
                 fill='tonexty',  # Add gradient fill
                 fillcolor=rgba_color,
+                hovertemplate="<b>Gameweek %{x}</b><br><br>%{text}<extra></extra>",
                 text=hover_text
             )
         )
