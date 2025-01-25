@@ -4,6 +4,8 @@ from sqlalchemy.orm import Session
 from db.models import League, Team, Match
 from db.database import get_db
 from utils.football_api import fetch_matches_from_api
+from utils.dev_mode import log_error, is_dev_mode
+from sqlalchemy.orm import Session
 
 def sync_matches(league_id: int, season: int):
     """
@@ -30,58 +32,78 @@ def sync_matches(league_id: int, season: int):
             db.add(league)
             db.commit()
 
-        # Process each match
+        # Process each match with error handling
         for _, row in api_matches.iterrows():
-            # Get or create teams with their API IDs
-            home_team = get_or_create_team(db, row['home_team'], row['home_team_id'], league.id)
-            away_team = get_or_create_team(db, row['away_team'], row['away_team_id'], league.id)
+            try:
+                with db.no_autoflush:
+                    # Get or create teams with their API IDs
+                    home_team = get_or_create_team(db, row['home_team'], row['home_team_id'], league.id)
+                    away_team = get_or_create_team(db, row['away_team'], row['away_team_id'], league.id)
 
-            # Update or create match
-            match = db.query(Match).filter_by(api_id=row['fixture_id']).first()
+                    # Check if match already exists
+                    match = (db.query(Match)
+                            .filter_by(
+                                season=season,
+                                league_id=league.id,
+                                home_team_id=home_team.id,
+                                away_team_id=away_team.id
+                            ).first())
 
-            # Convert scores to integers or None for not started matches
-            home_score = int(row['home_score']) if pd.notna(row.get('home_score')) else None
-            away_score = int(row['away_score']) if pd.notna(row.get('away_score')) else None
+                    # Convert scores to integers or None for not started matches
+                    home_score = int(row['home_score']) if pd.notna(row.get('home_score')) else None
+                    away_score = int(row['away_score']) if pd.notna(row.get('away_score')) else None
 
-            if match:
-                # Update existing match
-                match.home_score = home_score
-                match.away_score = away_score
-                match.status = row['status']
-            else:
-                # Create new match
-                match = Match(
-                    api_id=row['fixture_id'],
-                    date=pd.to_datetime(row['date']).date(),
-                    season=season,
-                    league_id=league.id,
-                    home_team_id=home_team.id,
-                    away_team_id=away_team.id,
-                    home_score=home_score,
-                    away_score=away_score,
-                    status=row['status']
-                )
-                db.add(match)
+                    if match:
+                        # Update existing match if scores changed
+                        if match.home_score != home_score or match.away_score != away_score:
+                            match.home_score = home_score
+                            match.away_score = away_score
+                            match.status = row['status']
+                    else:
+                        # Create new match
+                        match = Match(
+                            api_id=row['fixture_id'],
+                            date=pd.to_datetime(row['date']).date(),
+                            season=season,
+                            league_id=league.id,
+                            home_team_id=home_team.id,
+                            away_team_id=away_team.id,
+                            home_score=home_score,
+                            away_score=away_score,
+                            status=row['status']
+                        )
+                        db.add(match)
 
-        db.commit()
+                    db.commit()
+
+            except Exception as e:
+                db.rollback()
+                if is_dev_mode():
+                    log_error(f"Error processing match: {row['fixture_id']}", e)
+                continue
 
     except Exception as e:
         db.rollback()
-        raise e
+        error_msg = log_error("Failed to sync matches", e)
+        if is_dev_mode():
+            raise Exception(error_msg) from e
+        else:
+            raise Exception("Failed to update match data") from e
     finally:
         db.close()
 
 def get_or_create_team(db: Session, team_name: str, team_api_id: int, league_id: int):
     """Get or create a team in the database"""
-    team = db.query(Team).filter_by(api_id=team_api_id, league_id=league_id).first()
-    if not team:
-        team = Team(
-            name=team_name,
-            api_id=team_api_id,
-            league_id=league_id
-        )
-        db.add(team)
-        db.commit()
+    with db.no_autoflush:
+        team = db.query(Team).filter_by(api_id=team_api_id, league_id=league_id).first()
+        if not team:
+            team = Team(
+                name=team_name,
+                api_id=team_api_id,
+                league_id=league_id
+            )
+            db.add(team)
+            db.commit()
     return team
 
 def needs_refresh(league_id: int, season: int) -> bool:
