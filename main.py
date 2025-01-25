@@ -8,17 +8,40 @@ st.set_page_config(page_title="Football League Dashboard",
                    layout="wide",
                    initial_sidebar_state="collapsed")
 
-# Custom CSS to hide the default menu button and footer
+# Custom CSS for dark theme
 st.markdown("""
     <style>
+    .stApp {
+        background-color: rgb(17, 17, 17);
+        color: rgba(255, 255, 255, 0.9);
+    }
+    .stSelectbox label, .stSelectbox div[role="button"] {
+        color: rgba(255, 255, 255, 0.9) !important;
+    }
+    .stSelectbox div[role="button"] {
+        background-color: rgba(17, 17, 17, 0.9);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     .stApp > header {display: none;}
     .main > div {padding-top: 2rem;}
+    .stTabs [data-baseweb="tab-list"] {
+        background-color: rgba(17, 17, 17, 0.9);
+        padding: 1rem 1rem 0 1rem;
+        border-radius: 1rem 1rem 0 0;
+    }
+    .stTabs [data-baseweb="tab"] {
+        color: rgba(255, 255, 255, 0.7);
+    }
+    .stTabs [data-baseweb="tab-highlight"] {
+        background-color: rgba(255, 255, 255, 0.2);
+    }
+    .stMarkdown div {
+        color: rgba(255, 255, 255, 0.9);
+    }
     </style>
-    """,
-            unsafe_allow_html=True)
-
+    """, unsafe_allow_html=True)
 
 def main():
     st.title("⚽ Football League Points Progression")
@@ -29,16 +52,15 @@ def main():
     leagues = get_available_leagues()
     with col1:
         selected_league = st.selectbox("Select League",
-                                       options=list(leagues.keys()),
-                                       format_func=lambda x: leagues[x],
-                                       key="league_selector")
+                                      options=list(leagues.keys()),
+                                      format_func=lambda x: leagues[x],
+                                      key="league_selector")
 
     seasons = get_available_seasons()
     with col2:
         selected_season = st.selectbox("Select Season",
-                                       options=list(seasons.keys()),
-                                       format_func=lambda x: seasons[x],
-                                       key="season_selector")
+                                      options=seasons,
+                                      key="season_selector")
 
     with info:
         with st.expander("ℹ️ About"):
@@ -59,7 +81,7 @@ def main():
     with tab1:
         # Plot cumulative points
         fig = plot_cumulative_points(points_df)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, theme="streamlit")
 
         with st.expander("🎮 How to use this graph"):
             st.markdown("""
@@ -72,7 +94,6 @@ def main():
     with tab2:
         # Display team statistics
         display_team_stats(points_df)
-
 
 if __name__ == "__main__":
     main()
