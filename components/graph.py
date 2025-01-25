@@ -5,6 +5,17 @@ from utils.data_processor import get_team_colors
 
 def plot_cumulative_points(points_df):
     """Create an interactive line plot showing cumulative points over time"""
+    if points_df.empty:
+        st.warning("No match data available for the selected league and season.")
+        # Return an empty figure
+        fig = go.Figure()
+        fig.update_layout(
+            title="No data available",
+            xaxis_title="Date",
+            yaxis_title="Points"
+        )
+        return fig
+
     # Create figure with more sophisticated styling
     fig = px.line(
         points_df,
@@ -76,6 +87,9 @@ def plot_cumulative_points(points_df):
 
 def display_team_stats(points_df):
     """Display key statistics for each team"""
+    if points_df.empty:
+        return
+
     latest_points = points_df.groupby('team')['points'].last().sort_values(ascending=False)
     team_colors = get_team_colors()
 

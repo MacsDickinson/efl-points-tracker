@@ -11,12 +11,14 @@ def get_league_matches(league_id, season):
     """
     Fetch match data for a specific league and season
     """
-    headers = {
-        "X-RapidAPI-Key": st.secrets["RAPIDAPI_KEY"],
-        "X-RapidAPI-Host": "api-football-v1.p.rapidapi.com"
-    }
-
     try:
+        headers = {
+            "X-RapidAPI-Key": st.secrets["RAPIDAPI_KEY"],
+            "X-RapidAPI-Host": "api-football-v1.p.rapidapi.com"
+        }
+
+        st.write("Fetching match data...")  # Debug log
+
         # Get all fixtures for the league and season
         response = requests.get(
             f"{FOOTBALL_API_BASE}/fixtures",
@@ -25,13 +27,28 @@ def get_league_matches(league_id, season):
                 "league": league_id,
                 "season": season,
                 "status": "FT"  # Only completed matches
-            }
+            },
+            timeout=10  # Add timeout to prevent hanging
         )
+
+        if response.status_code == 401:
+            st.error("⚠️ Invalid API key. Please check your RapidAPI key.")
+            return pd.DataFrame(columns=['date', 'home_team', 'away_team', 'home_score', 'away_score'])
+
         response.raise_for_status()
+        data = response.json()
 
-        fixtures = response.json()["response"]
+        if "response" not in data:
+            st.error("⚠️ Unexpected API response format")
+            st.write("API Response:", data)  # Debug log
+            return pd.DataFrame(columns=['date', 'home_team', 'away_team', 'home_score', 'away_score'])
+
+        fixtures = data["response"]
+        if not fixtures:
+            st.warning("No matches found for the selected league and season.")
+            return pd.DataFrame(columns=['date', 'home_team', 'away_team', 'home_score', 'away_score'])
+
         matches = []
-
         for fixture in fixtures:
             match = {
                 'date': fixture['fixture']['date'][:10],  # YYYY-MM-DD format
@@ -42,11 +59,15 @@ def get_league_matches(league_id, season):
             }
             matches.append(match)
 
-        return pd.DataFrame(matches)
+        df = pd.DataFrame(matches)
+        st.write(f"Found {len(df)} matches")  # Debug log
+        return df
 
     except requests.exceptions.RequestException as e:
-        st.error(f"Error fetching match data: {str(e)}")
-        # Return empty DataFrame with correct columns
+        st.error(f"⚠️ Error fetching match data: {str(e)}")
+        return pd.DataFrame(columns=['date', 'home_team', 'away_team', 'home_score', 'away_score'])
+    except KeyError as e:
+        st.error(f"⚠️ Error processing API response: {str(e)}")
         return pd.DataFrame(columns=['date', 'home_team', 'away_team', 'home_score', 'away_score'])
 
 @st.cache_data(ttl=3600)
