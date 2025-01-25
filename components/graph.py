@@ -36,7 +36,7 @@ def plot_cumulative_points(points_df):
 
         fig.add_trace(
             go.Scatter(
-                x=team_data['date'],
+                x=team_data['matches_played'],
                 y=team_data['points'],
                 name=team,
                 mode='lines',
@@ -49,7 +49,7 @@ def plot_cumulative_points(points_df):
                 fill='tonexty',  # Add gradient fill
                 fillcolor=rgba_color,
                 hovertemplate="<b>%{text}</b><br>" +
-                            "Date: %{x}<br>" +
+                            "Match: %{x}<br>" +
                             "Points: %{y}<extra></extra>",
                 text=[team] * len(team_data)
             )
@@ -61,14 +61,15 @@ def plot_cumulative_points(points_df):
         plot_bgcolor='rgba(17, 17, 17, 0.9)',
         paper_bgcolor='rgba(17, 17, 17, 0.9)',
         xaxis=dict(
-            title="Match Date",
+            title="Matches Played",
             showgrid=True,
             gridwidth=1,
             gridcolor='rgba(255, 255, 255, 0.1)',
             showline=True,
             linewidth=2,
             linecolor='rgba(255, 255, 255, 0.2)',
-            tickfont=dict(size=12)
+            tickfont=dict(size=12),
+            dtick=1  # Show every match number
         ),
         yaxis=dict(
             title="Points",
