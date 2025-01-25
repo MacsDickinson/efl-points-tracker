@@ -18,24 +18,32 @@ def get_league_matches(league_id, season):
              "Tottenham", "Leicester", "West Ham", "Everton", "Leeds"]
 
     matches = []
-    current_date = datetime(2022, 8, 1)
+    current_date = datetime(2022, 8, 1)  # Season start date
 
-    for month in range(9):
-        for team1_idx in range(len(teams)):
-            for team2_idx in range(team1_idx + 1, len(teams)):
-                home_score = np.random.randint(0, 5)
-                away_score = np.random.randint(0, 5)
+    # Generate matches for approximately 38 weeks (standard season length)
+    for week in range(38):
+        # Each week has 5 matches (10 teams = 5 matches per week)
+        teams_this_week = teams.copy()
+        np.random.shuffle(teams_this_week)
 
-                match = {
-                    'date': current_date.strftime('%Y-%m-%d'),
-                    'home_team': teams[team1_idx],
-                    'away_team': teams[team2_idx],
-                    'home_score': home_score,
-                    'away_score': away_score,
-                }
-                matches.append(match)
+        for i in range(0, len(teams_this_week), 2):
+            home_team = teams_this_week[i]
+            away_team = teams_this_week[i + 1]
 
-        current_date = pd.Timestamp(current_date) + pd.DateOffset(days=30)
+            home_score = np.random.randint(0, 5)
+            away_score = np.random.randint(0, 5)
+
+            match = {
+                'date': current_date.strftime('%Y-%m-%d'),
+                'home_team': home_team,
+                'away_team': away_team,
+                'home_score': home_score,
+                'away_score': away_score,
+            }
+            matches.append(match)
+
+        # Increment by one week
+        current_date = pd.Timestamp(current_date) + pd.DateOffset(days=7)
 
     return pd.DataFrame(matches)
 
