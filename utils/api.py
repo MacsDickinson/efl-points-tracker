@@ -16,8 +16,6 @@ def get_league_matches(league_id, season):
     """
     # Check if we need to refresh data
     if needs_refresh(league_id, season):
-        if is_dev_mode():
-            st.write(f"Running get_league_matches({league_id}, {season})")
         sync_matches(league_id, season)
 
     db = next(get_db())
@@ -25,7 +23,6 @@ def get_league_matches(league_id, season):
         # Get league ID from database
         league = db.query(League).filter_by(api_id=league_id).first()
         if not league:
-            st.error("League not found in database")
             return pd.DataFrame()
 
         # Get matches from database
@@ -35,9 +32,6 @@ def get_league_matches(league_id, season):
             .order_by(Match.date)
             .all()
         )
-
-        if is_dev_mode():
-            st.write(f"Found {len(matches)} matches in database")  # Debug info
 
         # Convert to DataFrame
         matches_data = []
