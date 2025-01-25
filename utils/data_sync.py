@@ -12,6 +12,8 @@ def sync_matches(league_id: int, season: int):
     - Updates existing matches
     - Adds new matches
     """
+    # Convert season to int if it's a string
+    season = int(season)
     db = next(get_db())
 
     try:
@@ -37,10 +39,14 @@ def sync_matches(league_id: int, season: int):
             # Update or create match
             match = db.query(Match).filter_by(api_id=row['fixture_id']).first()
 
+            # Convert NaN scores to None for not started matches
+            home_score = None if pd.isna(row.get('home_score')) else row.get('home_score')
+            away_score = None if pd.isna(row.get('away_score')) else row.get('away_score')
+
             if match:
                 # Update existing match
-                match.home_score = row.get('home_score')
-                match.away_score = row.get('away_score')
+                match.home_score = home_score
+                match.away_score = away_score
                 match.status = row['status']
             else:
                 # Create new match
@@ -51,8 +57,8 @@ def sync_matches(league_id: int, season: int):
                     league_id=league.id,
                     home_team_id=home_team.id,
                     away_team_id=away_team.id,
-                    home_score=row.get('home_score'),
-                    away_score=row.get('away_score'),
+                    home_score=home_score,
+                    away_score=away_score,
                     status=row['status']
                 )
                 db.add(match)
@@ -86,6 +92,8 @@ def needs_refresh(league_id: int, season: int) -> bool:
     - Last match was over 24 hours ago and there are unfinished matches
     - Next match is within 24 hours
     """
+    # Convert season to int if it's a string
+    season = int(season)
     db = next(get_db())
     try:
         # Get latest match in database
