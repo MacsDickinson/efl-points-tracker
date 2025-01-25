@@ -34,21 +34,16 @@ def plot_cumulative_points(points_df):
             teams_points.sort(key=lambda x: x[1], reverse=True)
             # Format as "position. team - points"
             hover_data[match] = "<br>".join([f"{pos+1}. {team} - {int(points)}" 
-                                           for pos, (team, points) in enumerate(teams_points)])
+                                          for pos, (team, points) in enumerate(teams_points)])
 
-    # Add traces for each team
-    for team in points_df['team'].unique():
+    # Sort teams by their final points
+    final_points = points_df.groupby('team')['points'].last().sort_values(ascending=False)
+    sorted_teams = final_points.index.tolist()
+
+    # Add traces for each team in order of final points
+    for team in sorted_teams:
         team_data = points_df[points_df['team'] == team].sort_values('matches_played')
         team_color = get_team_colors().get(team, '#808080')  # Default to gray if no color defined
-
-        # Convert hex color to rgba for gradient
-        try:
-            r = int(team_color.lstrip('#')[0:2], 16)
-            g = int(team_color.lstrip('#')[2:4], 16)
-            b = int(team_color.lstrip('#')[4:6], 16)
-            rgba_color = f'rgba({r},{g},{b},0.1)'
-        except (ValueError, IndexError):
-            rgba_color = 'rgba(128,128,128,0.1)'  # Fallback to gray with opacity
 
         # Create hover text list
         hover_text = [hover_data.get(match, "") for match in team_data['matches_played']]
@@ -65,8 +60,6 @@ def plot_cumulative_points(points_df):
                     shape='spline',  # Curved lines
                     smoothing=0.8
                 ),
-                fill='tonexty',  # Add gradient fill
-                fillcolor=rgba_color,
                 hovertemplate="<b>Gameweek %{x}</b><br><br>%{text}<extra></extra>",
                 text=hover_text
             )
@@ -113,7 +106,11 @@ def plot_cumulative_points(points_df):
             bgcolor='rgba(17, 17, 17, 0.8)',
             bordercolor='rgba(255, 255, 255, 0.2)',
             borderwidth=1,
-            font=dict(size=12)
+            font=dict(
+                family="Arial, sans-serif",
+                size=12,
+                color="rgba(255, 255, 255, 0.9)"  # Set legend text color to white
+            )
         ),
         font=dict(
             family="Arial, sans-serif",
