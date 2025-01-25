@@ -79,23 +79,25 @@ def calculate_league_positions(matches_df):
         # Get standings for this date
         date_standings = points_df[points_df['date'] == date].copy()
 
-        # Sort teams by points, goal difference, goals for
-        sorted_teams = date_standings.sort_values(
-            by=['points', 'goal_difference', 'goals_for'],
-            ascending=[False, False, False]
-        )
-
-        # Assign positions sequentially after sorting
-        for pos, (_, row) in enumerate(sorted_teams.iterrows(), 1):
-            position_data.append({
+        # Create a list for manual sorting and position assignment
+        teams = []
+        for _, row in date_standings.iterrows():
+            teams.append({
                 'team': row['team'],
                 'date': date,
-                'position': pos,
-                'matches_played': row['matches_played'],
                 'points': row['points'],
                 'goal_difference': row['goal_difference'],
-                'goals_for': row['goals_for']
+                'goals_for': row['goals_for'],
+                'matches_played': row['matches_played']
             })
+
+        # Sort teams by points, goal difference, goals for
+        teams.sort(key=lambda x: (-x['points'], -x['goal_difference'], -x['goals_for']))
+
+        # Assign positions sequentially
+        for position, team_data in enumerate(teams, 1):
+            team_data['position'] = position
+            position_data.append(team_data)
 
     return pd.DataFrame(position_data)
 
