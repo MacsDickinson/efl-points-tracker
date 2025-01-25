@@ -34,7 +34,7 @@ def plot_cumulative_points(points_df):
             teams_points.sort(key=lambda x: x[1], reverse=True)
             # Format as "position. team - points"
             hover_data[match] = "<br>".join([f"{pos+1}. {team} - {int(points)}" 
-                                         for pos, (team, points) in enumerate(teams_points)])
+                                             for pos, (team, points) in enumerate(teams_points)])
 
     # Sort teams by their final points
     final_points = points_df.groupby('team')['points'].last().sort_values(ascending=False)
@@ -148,12 +148,14 @@ def plot_league_positions(positions_df):
     for match in range(1, max_matches + 1):
         match_data = positions_df[positions_df['matches_played'] == match]
         if not match_data.empty:
-            teams_positions = match_data[['team', 'position']].values.tolist()
+            teams_info = match_data[['team', 'position', 'points', 'goal_difference', 'goals_for']].values.tolist()
             # Sort by position (ascending, since 1 is best)
-            teams_positions.sort(key=lambda x: x[1])
-            # Format hover text
-            hover_data[match] = "<br>".join([f"{pos}. {team}" 
-                                         for team, pos in teams_positions])
+            teams_info.sort(key=lambda x: x[1])
+            # Format hover text with detailed stats
+            hover_data[match] = "<br>".join([
+                f"{pos}. {team} ({pts}pts, GD:{gd:+d}, GF:{gf})" 
+                for team, pos, pts, gd, gf in teams_info
+            ])
 
     # Sort teams by their final positions (ascending)
     final_positions = positions_df.groupby('team')['position'].last().sort_values()
@@ -227,20 +229,10 @@ def plot_league_positions(positions_df):
             x=1.02,
             bgcolor='rgba(17, 17, 17, 0.8)',
             bordercolor='rgba(255, 255, 255, 0.2)',
-            borderwidth=1,
-            font=dict(
-                family="Arial, sans-serif",
-                size=12,
-                color="rgba(255, 255, 255, 0.9)"
-            )
-        ),
-        font=dict(
-            family="Arial, sans-serif",
-            size=14,
-            color="rgba(255, 255, 255, 0.9)"
+            borderwidth=1
         ),
         margin=dict(l=60, r=160, t=40, b=60),
-        showlegend=True,
+        showlegend=True
     )
 
     return fig

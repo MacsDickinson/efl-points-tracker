@@ -1,7 +1,7 @@
 import pandas as pd
 
 def calculate_cumulative_points(matches_df):
-    """Calculate cumulative points for each team over time"""
+    """Calculate cumulative points and goal statistics for each team over time"""
     if matches_df.empty:
         return pd.DataFrame()
 
@@ -19,31 +19,44 @@ def calculate_cumulative_points(matches_df):
 
         points = []
         cumulative_points = 0
+        cumulative_goals_for = 0
+        cumulative_goals_against = 0
         matches_played = 0
 
         for _, match in team_matches.iterrows():
             matches_played += 1
             if match['home_team'] == team:
-                if match['home_score'] > match['away_score']:
+                team_goals = match['home_score']
+                opponent_goals = match['away_score']
+                if team_goals > opponent_goals:
                     points_earned = 3
-                elif match['home_score'] == match['away_score']:
+                elif team_goals == opponent_goals:
                     points_earned = 1
                 else:
                     points_earned = 0
             else:  # team is away
-                if match['away_score'] > match['home_score']:
+                team_goals = match['away_score']
+                opponent_goals = match['home_score']
+                if team_goals > opponent_goals:
                     points_earned = 3
-                elif match['home_score'] == match['away_score']:
+                elif team_goals == opponent_goals:
                     points_earned = 1
                 else:
                     points_earned = 0
 
             cumulative_points += points_earned
+            cumulative_goals_for += team_goals
+            cumulative_goals_against += opponent_goals
+            goal_difference = cumulative_goals_for - cumulative_goals_against
+
             points.append({
                 'team': team,
                 'date': match['date'],
                 'points': cumulative_points,
-                'matches_played': matches_played
+                'matches_played': matches_played,
+                'goals_for': cumulative_goals_for,
+                'goals_against': cumulative_goals_against,
+                'goal_difference': goal_difference
             })
 
         points_data.extend(points)
@@ -66,10 +79,10 @@ def calculate_league_positions(matches_df):
         # Get standings for this date
         date_standings = points_df[points_df['date'] == date].copy()
 
-        # Sort by points (descending) and get positions
+        # Sort by points (descending), then goal difference (descending), then goals for (descending)
         date_standings['position'] = (date_standings
-            .sort_values(['points', 'matches_played'], 
-                        ascending=[False, True])
+            .sort_values(['points', 'goal_difference', 'goals_for', 'matches_played'], 
+                        ascending=[False, False, False, True])
             .reset_index()
             .index + 1)
 
@@ -79,7 +92,10 @@ def calculate_league_positions(matches_df):
                 'team': row['team'],
                 'date': date,
                 'position': row['position'],
-                'matches_played': row['matches_played']
+                'matches_played': row['matches_played'],
+                'points': row['points'],
+                'goal_difference': row['goal_difference'],
+                'goals_for': row['goals_for']
             })
 
     return pd.DataFrame(position_data)
