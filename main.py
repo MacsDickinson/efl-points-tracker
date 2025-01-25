@@ -11,6 +11,7 @@ from utils.api import get_league_matches, get_available_leagues, get_available_s
 from utils.data_processor import calculate_cumulative_points
 from components.graph import plot_cumulative_points, display_team_stats
 from db.database import init_db
+from utils.dev_mode import log_error
 
 # Custom CSS for dark theme
 st.markdown("""
@@ -50,9 +51,13 @@ st.markdown("""
 
 # Initialize database with error handling
 try:
-    init_db()
+    if not init_db():
+        error_msg = log_error("Database initialization failed")
+        st.error(error_msg)
+        st.stop()
 except Exception as e:
-    st.error(f"Failed to initialize database: {str(e)}")
+    error_msg = log_error("Failed to initialize database", e)
+    st.error(error_msg)
     st.stop()
 
 def main():

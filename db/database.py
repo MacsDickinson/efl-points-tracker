@@ -1,5 +1,5 @@
 import os
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, scoped_session
 from .models import Base
 import streamlit as st
@@ -23,15 +23,15 @@ SessionLocal = scoped_session(session_factory)
 # Create tables
 def init_db():
     try:
-        # Test connection
+        # Test connection with proper SQL execution
         with engine.connect() as conn:
-            conn.execute("SELECT 1")
+            conn.execute(text("SELECT 1"))
+            conn.commit()
 
         # Create tables if they don't exist
         Base.metadata.create_all(bind=engine)
         return True
     except Exception as e:
-        st.error(f"Failed to initialize database: {str(e)}")
         return False
 
 def get_db():
