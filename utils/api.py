@@ -6,6 +6,7 @@ from db.database import get_db
 from db.models import League, Match
 from utils.data_sync import sync_matches, needs_refresh
 from utils.football_api import fetch_matches_from_api
+from utils.dev_mode import is_dev_mode
 
 @st.cache_data(ttl=3600)
 def get_league_matches(league_id, season):
@@ -15,6 +16,8 @@ def get_league_matches(league_id, season):
     """
     # Check if we need to refresh data
     if needs_refresh(league_id, season):
+        if is_dev_mode():
+            st.write(f"Running get_league_matches({league_id}, {season})")
         sync_matches(league_id, season)
 
     db = next(get_db())
@@ -33,7 +36,8 @@ def get_league_matches(league_id, season):
             .all()
         )
 
-        st.write(f"Found {len(matches)} matches in database")  # Debug info
+        if is_dev_mode():
+            st.write(f"Found {len(matches)} matches in database")  # Debug info
 
         # Convert to DataFrame
         matches_data = []
