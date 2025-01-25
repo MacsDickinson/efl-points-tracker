@@ -1,10 +1,11 @@
 import requests
 import pandas as pd
-import numpy as np
 from datetime import datetime
 import streamlit as st
+import os
 
 FOOTBALL_API_BASE = "https://api-football-v1.p.rapidapi.com/v3"
+
 
 @st.cache_data(ttl=3600)
 def get_league_matches(league_id, season):
@@ -13,11 +14,11 @@ def get_league_matches(league_id, season):
     """
     try:
         headers = {
-            "X-RapidAPI-Key": st.secrets["RAPIDAPI_KEY"],
+            "X-RapidAPI-Key": os.getenv("RAPIDAPI_KEY"),
             "X-RapidAPI-Host": "api-football-v1.p.rapidapi.com"
         }
 
-        st.write("Fetching match data...")  # Debug log
+        st.write("Fetching match data")  # Debug log
 
         # Get all fixtures for the league and season
         response = requests.get(
@@ -33,7 +34,9 @@ def get_league_matches(league_id, season):
 
         if response.status_code == 401:
             st.error("⚠️ Invalid API key. Please check your RapidAPI key.")
-            return pd.DataFrame(columns=['date', 'home_team', 'away_team', 'home_score', 'away_score'])
+            return pd.DataFrame(columns=[
+                'date', 'home_team', 'away_team', 'home_score', 'away_score'
+            ])
 
         response.raise_for_status()
         data = response.json()
@@ -41,12 +44,16 @@ def get_league_matches(league_id, season):
         if "response" not in data:
             st.error("⚠️ Unexpected API response format")
             st.write("API Response:", data)  # Debug log
-            return pd.DataFrame(columns=['date', 'home_team', 'away_team', 'home_score', 'away_score'])
+            return pd.DataFrame(columns=[
+                'date', 'home_team', 'away_team', 'home_score', 'away_score'
+            ])
 
         fixtures = data["response"]
         if not fixtures:
             st.warning("No matches found for the selected league and season.")
-            return pd.DataFrame(columns=['date', 'home_team', 'away_team', 'home_score', 'away_score'])
+            return pd.DataFrame(columns=[
+                'date', 'home_team', 'away_team', 'home_score', 'away_score'
+            ])
 
         matches = []
         for fixture in fixtures:
@@ -65,10 +72,15 @@ def get_league_matches(league_id, season):
 
     except requests.exceptions.RequestException as e:
         st.error(f"⚠️ Error fetching match data: {str(e)}")
-        return pd.DataFrame(columns=['date', 'home_team', 'away_team', 'home_score', 'away_score'])
+        return pd.DataFrame(columns=[
+            'date', 'home_team', 'away_team', 'home_score', 'away_score'
+        ])
     except KeyError as e:
         st.error(f"⚠️ Error processing API response: {str(e)}")
-        return pd.DataFrame(columns=['date', 'home_team', 'away_team', 'home_score', 'away_score'])
+        return pd.DataFrame(columns=[
+            'date', 'home_team', 'away_team', 'home_score', 'away_score'
+        ])
+
 
 @st.cache_data(ttl=3600)
 def get_available_leagues():
@@ -80,8 +92,15 @@ def get_available_leagues():
         "42": "League Two",
     }
 
+
 def get_available_seasons():
     """Return available seasons for selection"""
     current_year = datetime.now().year
     # Return last 4 seasons including current
-    return [str(year) for year in range(current_year - 3, current_year + 1)]
+    return {
+        "2024": "24/25",
+        "2023": "23/24",
+        "2022": "22/23",
+        "2021": "21/22",
+        "2020": "20/21",
+    }

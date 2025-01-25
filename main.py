@@ -3,12 +3,10 @@ from utils.api import get_league_matches, get_available_leagues, get_available_s
 from utils.data_processor import calculate_cumulative_points
 from components.graph import plot_cumulative_points, display_team_stats
 
-st.set_page_config(
-    page_title="Football League Dashboard",
-    page_icon="⚽",
-    layout="wide",
-    initial_sidebar_state="collapsed"
-)
+st.set_page_config(page_title="Football League Dashboard",
+                   page_icon="⚽",
+                   layout="wide",
+                   initial_sidebar_state="collapsed")
 
 # Custom CSS to hide the default menu button and footer
 st.markdown("""
@@ -18,7 +16,9 @@ st.markdown("""
     .stApp > header {display: none;}
     .main > div {padding-top: 2rem;}
     </style>
-    """, unsafe_allow_html=True)
+    """,
+            unsafe_allow_html=True)
+
 
 def main():
     st.title("⚽ Football League Points Progression")
@@ -28,20 +28,17 @@ def main():
 
     leagues = get_available_leagues()
     with col1:
-        selected_league = st.selectbox(
-            "Select League",
-            options=list(leagues.keys()),
-            format_func=lambda x: leagues[x],
-            key="league_selector"
-        )
+        selected_league = st.selectbox("Select League",
+                                       options=list(leagues.keys()),
+                                       format_func=lambda x: leagues[x],
+                                       key="league_selector")
 
     seasons = get_available_seasons()
     with col2:
-        selected_season = st.selectbox(
-            "Select Season",
-            options=seasons,
-            key="season_selector"
-        )
+        selected_season = st.selectbox("Select Season",
+                                       options=list(seasons.keys()),
+                                       format_func=lambda x: seasons[x],
+                                       key="season_selector")
 
     with info:
         with st.expander("ℹ️ About"):
@@ -75,6 +72,7 @@ def main():
     with tab2:
         # Display team statistics
         display_team_stats(points_df)
+
 
 if __name__ == "__main__":
     main()
