@@ -2,6 +2,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 from utils.data_processor import get_team_colors
+import pandas as pd
 
 def plot_cumulative_points(points_df):
     """Create an interactive line plot showing cumulative points over time"""
@@ -20,9 +21,23 @@ def plot_cumulative_points(points_df):
     # Create figure with sophisticated styling
     fig = go.Figure()
 
+    # Prepare hover data for each match number
+    max_matches = points_df['matches_played'].max()
+    hover_data = {}
+
+    # Create hover data dictionary for each match number
+    for match in range(1, max_matches + 1):
+        match_data = points_df[points_df['matches_played'] == match]
+        if not match_data.empty:
+            teams_points = match_data[['team', 'points']].values.tolist()
+            # Sort by points in descending order
+            teams_points.sort(key=lambda x: x[1], reverse=True)
+            # Format as "team - points"
+            hover_data[match] = "<br>".join([f"{team} - {int(points)}" for team, points in teams_points])
+
     # Add traces for each team
     for team in points_df['team'].unique():
-        team_data = points_df[points_df['team'] == team].sort_values('date')
+        team_data = points_df[points_df['team'] == team].sort_values('matches_played')
         team_color = get_team_colors().get(team, '#808080')  # Default to gray if no color defined
 
         # Convert hex color to rgba for gradient
@@ -33,6 +48,9 @@ def plot_cumulative_points(points_df):
             rgba_color = f'rgba({r},{g},{b},0.1)'
         except (ValueError, IndexError):
             rgba_color = 'rgba(128,128,128,0.1)'  # Fallback to gray with opacity
+
+        # Create hover text list
+        hover_text = [hover_data.get(match, "") for match in team_data['matches_played']]
 
         fig.add_trace(
             go.Scatter(
@@ -48,10 +66,9 @@ def plot_cumulative_points(points_df):
                 ),
                 fill='tonexty',  # Add gradient fill
                 fillcolor=rgba_color,
-                hovertemplate="<b>%{text}</b><br>" +
-                            "Match: %{x}<br>" +
-                            "Points: %{y}<extra></extra>",
-                text=[team] * len(team_data)
+                hovertemplate="<b>Points After Match %{x}</b><br><br>" +
+                            "%{text}<extra></extra>",
+                text=hover_text
             )
         )
 
