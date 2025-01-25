@@ -63,44 +63,6 @@ def calculate_cumulative_points(matches_df):
 
     return pd.DataFrame(points_data)
 
-def calculate_league_positions(matches_df):
-    """Calculate league positions for each team over time"""
-    if matches_df.empty:
-        return pd.DataFrame()
-
-    # Get points data first
-    points_df = calculate_cumulative_points(matches_df)
-
-    # Calculate positions for each date
-    all_dates = sorted(points_df['date'].unique())
-    position_data = []
-
-    for date in all_dates:
-        # Get standings for this date
-        date_standings = points_df[points_df['date'] == date].copy()
-
-        # Create a list for manual sorting and position assignment
-        teams = []
-        for _, row in date_standings.iterrows():
-            teams.append({
-                'team': row['team'],
-                'date': date,
-                'points': row['points'],
-                'goal_difference': row['goal_difference'],
-                'goals_for': row['goals_for'],
-                'matches_played': row['matches_played']
-            })
-
-        # Sort teams by points, goal difference, goals for
-        teams.sort(key=lambda x: (-x['points'], -x['goal_difference'], -x['goals_for']))
-
-        # Assign positions sequentially
-        for position, team_data in enumerate(teams, 1):
-            team_data['position'] = position
-            position_data.append(team_data)
-
-    return pd.DataFrame(position_data)
-
 def get_team_colors():
     """Return consistent colors for teams across all leagues"""
     return {

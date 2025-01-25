@@ -29,12 +29,14 @@ def plot_cumulative_points(points_df):
     for match in range(1, max_matches + 1):
         match_data = points_df[points_df['matches_played'] == match]
         if not match_data.empty:
-            teams_points = match_data[['team', 'points']].values.tolist()
+            teams_points = match_data[['team', 'points', 'goal_difference', 'goals_for']].values.tolist()
             # Sort by points in descending order
-            teams_points.sort(key=lambda x: x[1], reverse=True)
-            # Format as "position. team - points"
-            hover_data[match] = "<br>".join([f"{pos+1}. {team} - {int(points)}" 
-                                             for pos, (team, points) in enumerate(teams_points)])
+            teams_points.sort(key=lambda x: (-x[1], -x[2], -x[3]))
+            # Format as "team - points (GD: x, GF: y)"
+            hover_data[match] = "<br>".join([
+                f"{team} - {int(points)}pts (GD: {gd:+d}, GF: {gf})"
+                for team, points, gd, gf in teams_points
+            ])
 
     # Sort teams by their final points
     final_points = points_df.groupby('team')['points'].last().sort_values(ascending=False)
@@ -123,126 +125,20 @@ def plot_cumulative_points(points_df):
 
     return fig
 
-def plot_league_positions(positions_df):
-    """Create an interactive line plot showing league positions over time"""
-    if positions_df.empty:
-        st.warning("No match data available for the selected league and season.")
-        # Return an empty figure
-        fig = go.Figure()
-        fig.update_layout(
-            title="No data available",
-            xaxis_title="Matches Played",
-            yaxis_title="League Position",
-            template="plotly_dark"
-        )
-        return fig
-
-    # Create figure
-    fig = go.Figure()
-
-    # Prepare hover data for each match number
-    max_matches = positions_df['matches_played'].max()
-    hover_data = {}
-
-    # Create hover data dictionary for each match number
-    for match in range(1, max_matches + 1):
-        match_data = positions_df[positions_df['matches_played'] == match]
-        if not match_data.empty:
-            teams_info = match_data[['team', 'position', 'points', 'goal_difference', 'goals_for']].values.tolist()
-            # Sort by position (ascending, since 1 is best)
-            teams_info.sort(key=lambda x: x[1])
-            # Format hover text with detailed stats
-            hover_data[match] = "<br>".join([
-                f"{pos}. {team} ({pts}pts, GD:{gd:+d}, GF:{gf})" 
-                for team, pos, pts, gd, gf in teams_info
-            ])
-
-    # Sort teams by their final positions (ascending)
-    final_positions = positions_df.groupby('team')['position'].last().sort_values()
-    sorted_teams = final_positions.index.tolist()
-
-    # Add traces for each team
-    for team in sorted_teams:
-        team_data = positions_df[positions_df['team'] == team].sort_values('matches_played')
-        team_color = get_team_colors().get(team, '#808080')
-
-        # Create hover text list
-        hover_text = [hover_data.get(match, "") for match in team_data['matches_played']]
-
-        fig.add_trace(
-            go.Scatter(
-                x=team_data['matches_played'],
-                y=team_data['position'],
-                name=team,
-                mode='lines',
-                line=dict(
-                    color=team_color,
-                    width=3,
-                    shape='spline',
-                    smoothing=0.8
-                ),
-                hovertemplate="<b>Gameweek %{x}</b><br><br>%{text}<extra></extra>",
-                text=hover_text
-            )
-        )
-
-    # Enhanced layout with dark theme
-    fig.update_layout(
-        template="plotly_dark",
-        plot_bgcolor='rgba(17, 17, 17, 0.9)',
-        paper_bgcolor='rgba(17, 17, 17, 0.9)',
-        xaxis=dict(
-            title="Matches Played",
-            showgrid=True,
-            gridwidth=1,
-            gridcolor='rgba(255, 255, 255, 0.1)',
-            showline=True,
-            linewidth=2,
-            linecolor='rgba(255, 255, 255, 0.2)',
-            tickfont=dict(size=12),
-            dtick=1
-        ),
-        yaxis=dict(
-            title="League Position",
-            showgrid=True,
-            gridwidth=1,
-            gridcolor='rgba(255, 255, 255, 0.1)',
-            showline=True,
-            linewidth=2,
-            linecolor='rgba(255, 255, 255, 0.2)',
-            tickfont=dict(size=12),
-            autorange="reversed",  # Reverse y-axis so position 1 is at the top
-            tickmode="linear",
-            dtick=1
-        ),
-        hoverdistance=100,
-        hovermode='closest',
-        hoverlabel=dict(
-            bgcolor='rgba(17, 17, 17, 0.95)',
-            bordercolor='rgba(255, 255, 255, 0.2)',
-            font=dict(size=12, family="Arial, sans-serif")
-        ),
-        legend=dict(
-            yanchor="top",
-            y=0.99,
-            xanchor="left",
-            x=1.02,
-            bgcolor='rgba(17, 17, 17, 0.8)',
-            bordercolor='rgba(255, 255, 255, 0.2)',
-            borderwidth=1
-        ),
-        margin=dict(l=60, r=160, t=40, b=60),
-        showlegend=True
-    )
-
-    return fig
-
 def display_team_stats(points_df):
     """Display key statistics for each team"""
     if points_df.empty:
         return
 
-    latest_points = points_df.groupby('team')['points'].last().sort_values(ascending=False)
+    # Get final standings for each team
+    final_data = points_df.groupby('team').last()
+
+    # Sort by points (descending), goal difference (descending), goals for (descending)
+    final_standings = final_data.sort_values(
+        ['points', 'goal_difference', 'goals_for'],
+        ascending=[False, False, False]
+    )
+
     team_colors = get_team_colors()
 
     st.markdown("""
@@ -261,7 +157,7 @@ def display_team_stats(points_df):
 
     # Create three columns for better spacing
     cols = st.columns(3)
-    for i, (team, points) in enumerate(latest_points.items()):
+    for i, (team, row) in enumerate(final_standings.iterrows()):
         col_idx = i % 3
         with cols[col_idx]:
             st.markdown(
@@ -283,7 +179,12 @@ def display_team_stats(points_df):
                         font-size: 1.5rem;
                         font-weight: bold;
                         margin: 0.5rem 0 0 0;
-                        '>{int(points)} pts</p>
+                        '>{int(row['points'])} pts</p>
+                    <p style='
+                        color: rgba(255, 255, 255, 0.7);
+                        font-size: 0.9rem;
+                        margin: 0.2rem 0 0 0;
+                        '>GD: {row['goal_difference']:+d} | GF: {row['goals_for']}</p>
                     </div>""",
                 unsafe_allow_html=True
             )
