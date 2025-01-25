@@ -50,11 +50,43 @@ def calculate_cumulative_points(matches_df):
 
     return pd.DataFrame(points_data)
 
+def calculate_league_positions(matches_df):
+    """Calculate league positions for each team over time"""
+    if matches_df.empty:
+        return pd.DataFrame()
+
+    # Get points data first
+    points_df = calculate_cumulative_points(matches_df)
+
+    # Calculate positions for each date
+    all_dates = sorted(points_df['date'].unique())
+    position_data = []
+
+    for date in all_dates:
+        # Get standings for this date
+        date_standings = points_df[points_df['date'] == date].copy()
+
+        # Sort by points (descending) and get positions
+        date_standings['position'] = (date_standings
+            .sort_values(['points', 'matches_played'], 
+                        ascending=[False, True])
+            .reset_index()
+            .index + 1)
+
+        # Add to position data
+        for _, row in date_standings.iterrows():
+            position_data.append({
+                'team': row['team'],
+                'date': date,
+                'position': row['position'],
+                'matches_played': row['matches_played']
+            })
+
+    return pd.DataFrame(position_data)
 
 def get_team_colors():
     """Return consistent colors for teams across all leagues"""
     return {
-        # Premier League
         "Arsenal": "#EF0107",
         "Aston Villa": "#670E36",
         "Bournemouth": "#DA291C",
@@ -75,8 +107,6 @@ def get_team_colors():
         "Tottenham": "#132257",
         "West Ham": "#7A263A",
         "Wolves": "#FDB913",
-
-        # Championship
         "Birmingham": "#0000FF",
         "Blackburn": "#009EE0",
         "Bristol City": "#E21C38",
@@ -100,8 +130,6 @@ def get_team_colors():
         "Swansea": "#121212",
         "Watford": "#FBEE23",
         "West Brom": "#122F67",
-
-        # League One
         "Barnsley": "#E41E26",
         "Blackpool": "#FF6634",
         "Bolton": "#012169",
@@ -124,8 +152,6 @@ def get_team_colors():
         "Stevenage": "#FF0000",
         "Wigan": "#009EE0",
         "Wycombe": "#1C3C7D",
-
-        # League Two
         "AFC Wimbledon": "#002A5C",
         "Accrington": "#A51D35",
         "Bradford": "#FF0000",
