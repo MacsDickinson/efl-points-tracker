@@ -2,14 +2,19 @@ import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session
 from .models import Base
+import streamlit as st
 
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
 if not DATABASE_URL:
     raise ValueError("DATABASE_URL environment variable is not set")
 
-# Create engine
-engine = create_engine(DATABASE_URL)
+# Create engine with proper SSL settings
+engine = create_engine(
+    DATABASE_URL,
+    pool_pre_ping=True,  # Enable connection health checks
+    pool_recycle=3600,   # Recycle connections after 1 hour
+)
 
 # Create session factory
 session_factory = sessionmaker(bind=engine)
@@ -17,8 +22,17 @@ SessionLocal = scoped_session(session_factory)
 
 # Create tables
 def init_db():
-    Base.metadata.drop_all(bind=engine)  # Drop all tables
-    Base.metadata.create_all(bind=engine)  # Create tables with new schema
+    try:
+        # Test connection
+        with engine.connect() as conn:
+            conn.execute("SELECT 1")
+
+        # Create tables if they don't exist
+        Base.metadata.create_all(bind=engine)
+        return True
+    except Exception as e:
+        st.error(f"Failed to initialize database: {str(e)}")
+        return False
 
 def get_db():
     db = SessionLocal()

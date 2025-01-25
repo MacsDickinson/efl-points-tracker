@@ -1,21 +1,16 @@
 import streamlit as st
+
+# Set page config must be the first Streamlit command
+st.set_page_config(page_title="Football League Dashboard",
+                   page_icon="⚽",
+                   layout="wide",
+                   initial_sidebar_state="collapsed")
+
 import os
 from utils.api import get_league_matches, get_available_leagues, get_available_seasons
 from utils.data_processor import calculate_cumulative_points
 from components.graph import plot_cumulative_points, display_team_stats
 from db.database import init_db
-
-# Initialize database with error handling
-try:
-    init_db()
-except Exception as e:
-    st.error(f"Failed to initialize database: {str(e)}")
-    st.stop()
-
-st.set_page_config(page_title="Football League Dashboard",
-                   page_icon="⚽",
-                   layout="wide",
-                   initial_sidebar_state="collapsed")
 
 # Custom CSS for dark theme
 st.markdown("""
@@ -51,9 +46,14 @@ st.markdown("""
     }
     </style>
     """,
-            unsafe_allow_html=True)
+        unsafe_allow_html=True)
 
-
+# Initialize database with error handling
+try:
+    init_db()
+except Exception as e:
+    st.error(f"Failed to initialize database: {str(e)}")
+    st.stop()
 
 def main():
     st.title("⚽ Football League Points Progression")

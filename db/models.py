@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Date, ForeignKey, UniqueConstraint, create_engine
+from sqlalchemy import Column, Integer, String, Date, ForeignKey, UniqueConstraint
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
@@ -38,8 +38,8 @@ class Match(Base):
     league_id = Column(Integer, ForeignKey('leagues.id'), nullable=False)
     home_team_id = Column(Integer, ForeignKey('teams.id'), nullable=False)
     away_team_id = Column(Integer, ForeignKey('teams.id'), nullable=False)
-    home_score = Column(Integer)
-    away_score = Column(Integer)
+    home_score = Column(Integer, nullable=True)  # Allow null for upcoming matches
+    away_score = Column(Integer, nullable=True)  # Allow null for upcoming matches
     status = Column(String, nullable=False)  # FT for finished, NS for not started, etc.
 
     league = relationship("League", back_populates="matches")
@@ -47,5 +47,5 @@ class Match(Base):
     away_team = relationship("Team", back_populates="away_matches", foreign_keys=[away_team_id])
 
     __table_args__ = (
-        UniqueConstraint('season', 'league_id', 'home_team_id', 'away_team_id'),
+        UniqueConstraint('season', 'league_id', 'home_team_id', 'away_team_id', name='uix_match_teams'),
     )

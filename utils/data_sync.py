@@ -39,9 +39,9 @@ def sync_matches(league_id: int, season: int):
             # Update or create match
             match = db.query(Match).filter_by(api_id=row['fixture_id']).first()
 
-            # Convert NaN scores to None for not started matches
-            home_score = None if pd.isna(row.get('home_score')) else row.get('home_score')
-            away_score = None if pd.isna(row.get('away_score')) else row.get('away_score')
+            # Convert scores to integers or None for not started matches
+            home_score = int(row['home_score']) if pd.notna(row.get('home_score')) else None
+            away_score = int(row['away_score']) if pd.notna(row.get('away_score')) else None
 
             if match:
                 # Update existing match
