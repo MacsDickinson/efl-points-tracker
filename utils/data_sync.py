@@ -1,5 +1,5 @@
-from datetime import datetime, timedelta
 import pandas as pd
+from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from db.models import League, Team, Match
 from db.database import get_db
@@ -96,10 +96,15 @@ def needs_refresh(league_id: int, season: int) -> bool:
     season = int(season)
     db = next(get_db())
     try:
+        # Get league from database
+        league = db.query(League).filter_by(api_id=league_id).first()
+        if not league:
+            return True
+
         # Get latest match in database
         latest_match = (
             db.query(Match)
-            .filter_by(league_id=league_id, season=season)
+            .filter_by(league_id=league.id, season=season)
             .order_by(Match.date.desc())
             .first()
         )
@@ -111,7 +116,7 @@ def needs_refresh(league_id: int, season: int) -> bool:
         unfinished_past_matches = (
             db.query(Match)
             .filter(
-                Match.league_id == league_id,
+                Match.league_id == league.id,
                 Match.season == season,
                 Match.date < datetime.now().date(),
                 Match.status != 'FT'
@@ -126,7 +131,7 @@ def needs_refresh(league_id: int, season: int) -> bool:
         next_match = (
             db.query(Match)
             .filter(
-                Match.league_id == league_id,
+                Match.league_id == league.id,
                 Match.season == season,
                 Match.date >= datetime.now().date(),
                 Match.status == 'NS'

@@ -1,6 +1,5 @@
 import requests
 import pandas as pd
-from datetime import datetime
 import streamlit as st
 import os
 from db.database import get_db
@@ -20,13 +19,21 @@ def get_league_matches(league_id, season):
 
     db = next(get_db())
     try:
+        # Get league ID from database
+        league = db.query(League).filter_by(api_id=league_id).first()
+        if not league:
+            st.error("League not found in database")
+            return pd.DataFrame()
+
         # Get matches from database
         matches = (
             db.query(Match)
-            .filter_by(league_id=league_id, season=season)
+            .filter_by(league_id=league.id, season=int(season))
             .order_by(Match.date)
             .all()
         )
+
+        st.write(f"Found {len(matches)} matches in database")  # Debug info
 
         # Convert to DataFrame
         matches_data = []
