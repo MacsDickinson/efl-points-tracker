@@ -41,7 +41,9 @@ st.markdown("""
         color: rgba(255, 255, 255, 0.9);
     }
     </style>
-    """, unsafe_allow_html=True)
+    """,
+            unsafe_allow_html=True)
+
 
 def main():
     st.title("⚽ Football League Points Progression")
@@ -52,15 +54,16 @@ def main():
     leagues = get_available_leagues()
     with col1:
         selected_league = st.selectbox("Select League",
-                                      options=list(leagues.keys()),
-                                      format_func=lambda x: leagues[x],
-                                      key="league_selector")
+                                       options=list(leagues.keys()),
+                                       format_func=lambda x: leagues[x],
+                                       key="league_selector")
 
     seasons = get_available_seasons()
     with col2:
         selected_season = st.selectbox("Select Season",
-                                      options=seasons,
-                                      key="season_selector")
+                                       options=list(seasons.keys()),
+                                       format_func=lambda x: seasons[x],
+                                       key="season_selector")
 
     with info:
         with st.expander("ℹ️ About"):
@@ -94,6 +97,7 @@ def main():
     with tab2:
         # Display team statistics
         display_team_stats(points_df)
+
 
 if __name__ == "__main__":
     main()

@@ -95,8 +95,6 @@ def get_available_leagues():
 
 def get_available_seasons():
     """Return available seasons for selection"""
-    current_year = datetime.now().year
-    # Return last 4 seasons including current
     return {
         "2024": "24/25",
         "2023": "23/24",

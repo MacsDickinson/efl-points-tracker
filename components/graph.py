@@ -23,7 +23,16 @@ def plot_cumulative_points(points_df):
     # Add traces for each team
     for team in points_df['team'].unique():
         team_data = points_df[points_df['team'] == team].sort_values('date')
-        team_color = get_team_colors().get(team, '#ffffff')
+        team_color = get_team_colors().get(team, '#808080')  # Default to gray if no color defined
+
+        # Convert hex color to rgba for gradient
+        try:
+            r = int(team_color.lstrip('#')[0:2], 16)
+            g = int(team_color.lstrip('#')[2:4], 16)
+            b = int(team_color.lstrip('#')[4:6], 16)
+            rgba_color = f'rgba({r},{g},{b},0.1)'
+        except (ValueError, IndexError):
+            rgba_color = 'rgba(128,128,128,0.1)'  # Fallback to gray with opacity
 
         fig.add_trace(
             go.Scatter(
@@ -38,7 +47,7 @@ def plot_cumulative_points(points_df):
                     smoothing=0.8
                 ),
                 fill='tonexty',  # Add gradient fill
-                fillcolor=f'rgba{tuple(int(team_color.lstrip("#")[i:i+2], 16) for i in (0, 2, 4)) + (0.1,)}',
+                fillcolor=rgba_color,
                 hovertemplate="<b>%{text}</b><br>" +
                             "Date: %{x}<br>" +
                             "Points: %{y}<extra></extra>",
