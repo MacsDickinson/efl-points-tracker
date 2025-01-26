@@ -23,7 +23,7 @@ def format_form(form_string):
 
 
 def create_sparkline(matches,
-                     colour="rgba(255,255,255,0.7)",
+                     team_colors=None,
                      max_points=100,
                      width=100,
                      height=30):
@@ -36,7 +36,7 @@ def create_sparkline(matches,
 
     # Calculate min and max for scaling
     min_points = 0
-    point_range = max(1, max_points - min_points)  # Avoid division by zero
+    point_range = max(points[-1] if points else max_points)  # Use final points or max_points
 
     # Create point coordinates
     x_step = width / (len(points) - 1) if len(points) > 1 else 0
@@ -51,11 +51,21 @@ def create_sparkline(matches,
     # Create SVG path
     path = f"M{' L'.join(points_coords)}"
 
+    # Use team colors if provided, otherwise default to white
+    primary_color = team_colors['primary'] if team_colors else "rgba(255,255,255,0.7)"
+    secondary_color = team_colors['secondary'] if team_colors else "rgba(255,255,255,0.3)"
+
     svg = f"""
     <svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" style="display: inline-block; vertical-align: middle;">
+        <defs>
+            <linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" style="stop-color:{primary_color};stop-opacity:1" />
+                <stop offset="100%" style="stop-color:{secondary_color};stop-opacity:1" />
+            </linearGradient>
+        </defs>
         <path 
             d="{path}" 
-            stroke="{colour}" 
+            stroke="url(#gradient)" 
             stroke-width="2" 
             fill="none" 
             vector-effect="non-scaling-stroke"
@@ -74,8 +84,8 @@ def display_league_table(team_data):
 
     # Sort teams by points (considering deductions)
     sorted_teams = sorted(team_data,
-                          key=lambda x: (x['position']),
-                          reverse=False)
+                         key=lambda x: (x['position']),
+                         reverse=False)
 
     # First, inject the CSS separately
     st.html("""
@@ -133,23 +143,24 @@ def display_league_table(team_data):
     table_rows.append(header_row)
 
     # Add data rows
-    max_points = sorted_teams[0]['total_points']
+    team_colors = get_team_colors()
+    max_points = max(team['total_points'] for team in sorted_teams)
 
     for team in sorted_teams:
         wins = sum(1 for m in team['matches'] if m['result'] == 'win')
         draws = sum(1 for m in team['matches'] if m['result'] == 'draw')
         losses = sum(1 for m in team['matches'] if m['result'] == 'loss')
-        team_colour = get_team_colors().get(team['name'], '#808080')
+        team_colour = team_colors.get(team['name'], {'primary': '#808080', 'secondary': '#404040'})
 
         form_display = format_form(team['form']) if team['form'] else ""
         sparkline = create_sparkline(team['matches'],
-                                     colour=team_colour,
-                                     max_points=max_points)
+                                    team_colors=team_colour,
+                                    max_points=max_points)
 
         row = f"""
         <tr>
             <td class="pos-cell">{team['position']}</td>
-            <td class="team-cell">{team['name']}</td>
+            <td class="team-cell" style="color: {team_colour['primary']}">{team['name']}</td>
             <td class="num-cell">{team['matches_played']}</td>
             <td class="num-cell">{wins}</td>
             <td class="num-cell">{draws}</td>

@@ -19,7 +19,7 @@ def plot_cumulative_points(points_df):
     # Add traces for each team
     for team in sorted_teams:
         team_data = points_df[points_df['team'] == team]
-        team_color = get_team_colors().get(team, '#808080')
+        team_colors_dict = get_team_colors().get(team, {'primary': '#808080', 'secondary': '#404040'})
 
         # Create hover text that includes key stats
         hover_text = [
@@ -37,7 +37,7 @@ def plot_cumulative_points(points_df):
                 name=team,
                 mode='lines',
                 line=dict(
-                    color=team_color,
+                    color=team_colors_dict['primary'],  # Use primary color for lines
                     width=3,
                     shape='spline',
                     smoothing=0.8
@@ -119,6 +119,7 @@ def display_team_stats(points_df):
     for i, row in final_standings.iterrows():
         col_idx = i % 3
         with cols[col_idx]:
+            team_color = team_colors.get(row['team'], {'primary': '#ffffff'})['primary']
             st.markdown(
                 f"""<div style='
                     padding: 1rem;
@@ -128,7 +129,7 @@ def display_team_stats(points_df):
                     background-color: rgba(17, 17, 17, 0.8);
                     '>
                     <h3 style='
-                        color: {team_colors.get(row['team'], '#ffffff')};
+                        color: {team_color};
                         margin: 0;
                         font-size: 1.1rem;
                         '>{row['team']}</h3>
