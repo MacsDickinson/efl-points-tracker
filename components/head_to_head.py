@@ -1,5 +1,7 @@
 import streamlit as st
 import pandas as pd
+from db.database import get_db
+from db.models import Match
 
 
 def display_head_to_head(team_data):
@@ -81,25 +83,31 @@ def display_head_to_head(team_data):
                       delta=team1_data['position'] - team2_data['position'],
                       delta_color="normal")
 
-        # Find head-to-head matches
-        h2h_matches = []
-        print(f"team1_data: {team1_data}")
-        for match in team1_data['matches']:
-            # Check if team2 is the opponent in this match
-            match['is_home'] = match['side'] == 'home'
-            if match['opponent'] == team2_id:
+        # Get database session
+        db = next(get_db())
+        try:
+            # Query all matches between the two teams
+            h2h_matches = []
+            matches = (db.query(Match)
+                      .filter(
+                          Match.status == 'FT',
+                          ((Match.home_team_id == team1_id) & (Match.away_team_id == team2_id)) |
+                          ((Match.home_team_id == team2_id) & (Match.away_team_id == team1_id))
+                      )
+                      .order_by(Match.date.desc())
+                      .all())
+
+            for match in matches:
+                is_team1_home = match.home_team_id == team1_id
                 h2h_matches.append({
-                    'date':
-                    match['date'],
-                    'home_team':
-                    team1_name if match['is_home'] else team2_name,
-                    'away_team':
-                    team2_name if match['is_home'] else team1_name,
-                    'home_score':
-                    match['goals']['home'],
-                    'away_score':
-                    match['goals']['away']
+                    'date': match.date,
+                    'home_team': team1_name if is_team1_home else team2_name,
+                    'away_team': team2_name if is_team1_home else team1_name,
+                    'home_score': match.home_score,
+                    'away_score': match.away_score
                 })
+        finally:
+            db.close()
 
         if h2h_matches:
             st.markdown("### Head-to-Head Matches")
