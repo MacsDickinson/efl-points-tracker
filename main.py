@@ -187,7 +187,7 @@ def main():
             """)
 
     # Main content
-    with st.spinner("Loading match data..."):
+    with st.spinner("Syncing match data..."):
         team_data = get_team_data_with_matches(int(selected_league),
                                                int(selected_season))
 
