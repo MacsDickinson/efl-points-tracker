@@ -8,80 +8,33 @@ from db.database import init_db
 from utils.dev_mode import log_error
 from components.league_table import display_league_table
 
-# Custom CSS for theme support
+# Custom CSS for system theme support
 st.markdown("""
     <style>
-    /* Theme variables */
     :root {
         color-scheme: light dark;
     }
 
     /* Light mode colors */
-    :root[data-theme="light"] {
-        --bg-color: rgb(255, 255, 255);
-        --text-color: rgb(49, 51, 63);
-        --secondary-bg: rgb(247, 248, 249);
-        --border-color: rgba(49, 51, 63, 0.1);
-        --hover-bg: rgba(49, 51, 63, 0.05);
+    @media (prefers-color-scheme: light) {
+        :root {
+            --bg-color: rgb(255, 255, 255);
+            --text-color: rgb(49, 51, 63);
+            --secondary-bg: rgb(247, 248, 249);
+            --border-color: rgba(49, 51, 63, 0.1);
+            --hover-bg: rgba(49, 51, 63, 0.05);
+        }
     }
 
     /* Dark mode colors */
-    :root[data-theme="dark"] {
-        --bg-color: rgb(17, 17, 17);
-        --text-color: rgba(255, 255, 255, 0.9);
-        --secondary-bg: rgba(17, 17, 17, 0.9);
-        --border-color: rgba(255, 255, 255, 0.1);
-        --hover-bg: rgba(255, 255, 255, 0.05);
-    }
-
-    /* Default to system preference */
     @media (prefers-color-scheme: dark) {
-        :root:not([data-theme]) {
+        :root {
             --bg-color: rgb(17, 17, 17);
             --text-color: rgba(255, 255, 255, 0.9);
             --secondary-bg: rgba(17, 17, 17, 0.9);
             --border-color: rgba(255, 255, 255, 0.1);
             --hover-bg: rgba(255, 255, 255, 0.05);
         }
-    }
-
-    /* Theme toggle button */
-    .theme-toggle {
-        position: fixed;
-        top: 1rem;
-        right: 1rem;
-        padding: 0.5rem;
-        background: var(--secondary-bg);
-        border: 1px solid var(--border-color);
-        border-radius: 0.5rem;
-        color: var(--text-color);
-        cursor: pointer;
-        z-index: 1000;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        font-size: 0.875rem;
-    }
-
-    .theme-toggle:hover {
-        background: var(--hover-bg);
-    }
-
-    .theme-toggle svg {
-        width: 1.25rem;
-        height: 1.25rem;
-        fill: currentColor;
-    }
-
-    /* Show/hide icons based on theme */
-    :root[data-theme="dark"] .sun-icon,
-    :root:not([data-theme="light"]) .sun-icon {
-        display: none;
-    }
-
-    :root[data-theme="light"] .moon-icon,
-    :root:not([data-theme="dark"]) .moon-icon {
-        display: none;
     }
 
     /* Rest of the styles */
@@ -121,39 +74,6 @@ st.markdown("""
         color: var(--text-color);
     }
     </style>
-
-    <!-- Theme toggle button -->
-    <div class="theme-toggle" data-theme-toggle>
-        <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-            <path d="M12 18a6 6 0 1 1 0-12 6 6 0 0 1 0 12zm0-2a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM11 1h2v3h-2V1zm0 19h2v3h-2v-3zM3.515 4.929l1.414-1.414L7.05 5.636 5.636 7.05 3.515 4.93zM16.95 18.364l1.414-1.414 2.121 2.121-1.414 1.414-2.121-2.121zm2.121-14.85l1.414 1.415-2.121 2.121-1.414-1.414 2.121-2.121zM5.636 16.95l1.414 1.414-2.121 2.121-1.414-1.414 2.121-2.121zM23 11v2h-3v-2h3zM4 11v2H1v-2h3z"/>
-        </svg>
-        <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-            <path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"/>
-        </svg>
-    </div>
-
-    <!-- Theme toggle script -->
-    <script>
-        document.addEventListener('click', function(event) {
-            const toggle = event.target.closest('[data-theme-toggle]');
-            if (!toggle) return;
-
-            const root = document.documentElement;
-            const currentTheme = root.getAttribute('data-theme');
-            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-
-            root.setAttribute('data-theme', newTheme);
-            localStorage.setItem('theme', newTheme);
-        });
-
-        // Set initial theme
-        (function() {
-            const savedTheme = localStorage.getItem('theme');
-            if (savedTheme) {
-                document.documentElement.setAttribute('data-theme', savedTheme);
-            }
-        })();
-    </script>
     """, unsafe_allow_html=True)
 
 # Initialize database with error handling
@@ -168,7 +88,27 @@ except Exception as e:
     st.stop()
 
 def main():
-    st.title("⚽ Football League Points Progression")
+    # Create and embed the header image
+    st.markdown("""
+    <div style="text-align: center; margin-bottom: 2rem;">
+        <svg width="600" height="100" viewBox="0 0 600 100">
+            <defs>
+                <linearGradient id="headerGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" style="stop-color:var(--text-color);stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:var(--text-color);stop-opacity:0.7" />
+                </linearGradient>
+            </defs>
+            <g>
+                <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" 
+                    fill="url(#headerGradient)" 
+                    style="font-size: 36px; font-weight: bold; font-family: system-ui;">
+                    ⚽ Football League Points Progression
+                </text>
+                <path d="M50,80 L550,80" stroke="var(--text-color)" stroke-width="2" stroke-opacity="0.3"/>
+            </g>
+        </svg>
+    </div>
+    """, unsafe_allow_html=True)
 
     # Create top navigation using columns
     col1, col2, spacer, info = st.columns([2, 2, 4, 2])
