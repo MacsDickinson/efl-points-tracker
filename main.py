@@ -1,18 +1,12 @@
 import streamlit as st
 import pandas as pd
-
-# Set page config must be the first Streamlit command
-st.set_page_config(page_title="Football League Dashboard",
-                   page_icon="⚽",
-                   layout="wide",
-                   initial_sidebar_state="collapsed")
-
 import os
 from utils.api import get_league_matches, get_available_leagues, get_available_seasons, get_team_data_with_matches
 from utils.data_processor import calculate_cumulative_points
 from components.graph import plot_cumulative_points, display_team_stats
 from db.database import init_db
 from utils.dev_mode import log_error
+from components.league_table import display_league_table
 
 # Custom CSS for dark theme
 st.markdown("""
@@ -48,7 +42,7 @@ st.markdown("""
     }
     </style>
     """,
-        unsafe_allow_html=True)
+    unsafe_allow_html=True)
 
 # Initialize database with error handling
 try:
@@ -122,7 +116,7 @@ def main():
 
         points_df = pd.DataFrame(points_data)
 
-        tab1, tab2 = st.tabs(["📈 Points Progression", "📊 Team Statistics"])
+        tab1, tab2 = st.tabs(["📈 Points Progression", "📊 League Table"])
 
         with tab1:
             fig = plot_cumulative_points(points_df)
@@ -137,7 +131,7 @@ def main():
                 """)
 
         with tab2:
-            display_team_stats(points_df)
+            display_league_table(team_data)
 
 if __name__ == "__main__":
     main()
