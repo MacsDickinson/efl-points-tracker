@@ -74,7 +74,8 @@ st.markdown("""
         color: var(--text-color);
     }
     </style>
-    """, unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True)
 
 # Initialize database with error handling
 try:
@@ -87,28 +88,30 @@ except Exception as e:
     st.error(error_msg)
     st.stop()
 
+
 def main():
     # Create and embed the header image
     st.markdown("""
     <div style="text-align: center; margin-bottom: 2rem;">
+        <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
         <svg width="600" height="100" viewBox="0 0 600 100">
             <defs>
-                <linearGradient id="headerGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" style="stop-color:var(--text-color);stop-opacity:1" />
-                    <stop offset="100%" style="stop-color:var(--text-color);stop-opacity:0.7" />
+                <linearGradient id="headerGradient" x1="0%" y1="0%" x2="100%" y2="50%">
+                    <stop offset="0%" style="stop-color:#C6EA8D;stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:#FE90AF;stop-opacity:0.7" />
                 </linearGradient>
             </defs>
             <g>
                 <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" 
                     fill="url(#headerGradient)" 
-                    style="font-size: 36px; font-weight: bold; font-family: system-ui;">
-                    ⚽ Football League Points Progression
+                    style="font-size: 3.6rem; font-weight: bold; font-family: 'Orbitron', system-ui;">
+                    Footy Stats
                 </text>
-                <path d="M50,80 L550,80" stroke="var(--text-color)" stroke-width="2" stroke-opacity="0.3"/>
             </g>
         </svg>
     </div>
-    """, unsafe_allow_html=True)
+    """,
+                unsafe_allow_html=True)
 
     # Create top navigation using columns
     col1, col2, spacer, info = st.columns([2, 2, 4, 2])
@@ -137,10 +140,26 @@ def main():
 
     # Main content
     with st.spinner("Loading match data..."):
-        team_data = get_team_data_with_matches(int(selected_league), int(selected_season))
+        team_data = get_team_data_with_matches(int(selected_league),
+                                              int(selected_season))
+
+        # Get all team names for filtering
+        all_teams = [team['name'] for team in team_data]
+
+        # Add team filter in sidebar
+        st.sidebar.markdown("### Team Filter")
+        selected_teams = st.sidebar.multiselect(
+            "Select teams to display",
+            options=all_teams,
+            default=all_teams,
+            key="team_filter"
+        )
+
+        # Filter team data based on selection
+        filtered_team_data = [team for team in team_data if team['name'] in selected_teams]
 
         points_data = []
-        for team in team_data:
+        for team in filtered_team_data:
             points_data.append({
                 'team': team['name'],
                 'date': team['matches'][0]['date'] if team['matches'] else None,
@@ -179,7 +198,7 @@ def main():
                 """)
 
         with tab2:
-            display_league_table(team_data)
+            display_league_table(filtered_team_data)
 
 if __name__ == "__main__":
     main()
