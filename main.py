@@ -17,6 +17,12 @@ st.markdown("""
     :root {
         color-scheme: light dark;
     }
+    
+    /* Base styles */
+    * {
+        box-sizing: border-box;
+        -webkit-tap-highlight-color: transparent;
+    }
 
     /* Light mode colors */
     @media (prefers-color-scheme: light) {
@@ -27,6 +33,34 @@ st.markdown("""
             --border-color: rgba(49, 51, 63, 0.1);
             --hover-bg: rgba(49, 51, 63, 0.05);
         }
+    }
+
+    /* Mobile optimizations */
+    @media screen and (max-width: 768px) {
+        .block-container {
+            padding: 1rem !important;
+        }
+        
+        .stApp {
+            font-size: 14px;
+        }
+
+        [data-testid="stSidebar"] {
+            min-width: 100% !important;
+            max-width: 100% !important;
+        }
+
+        .league-table {
+            font-size: 12px !important;
+        }
+
+        .pos-cell { width: 30px !important; }
+        .team-cell { width: 120px !important; }
+        .num-cell { width: 40px !important; }
+        .goals-cell { width: 60px !important; }
+        .form-cell { width: 100px !important; letter-spacing: 3px !important; }
+        .points-cell { width: 40px !important; }
+        .trend-cell { width: 80px !important; }
     }
 
     /* Dark mode colors */
@@ -49,6 +83,18 @@ st.markdown("""
         max-width: 95rem !important;
         padding-left: 2rem !important;
         padding-right: 2rem !important;
+        overflow-x: auto;
+    }
+    /* Table container for horizontal scrolling */
+    .element-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    /* Better touch targets */
+    .stSelectbox [data-baseweb="select"], 
+    .stMultiSelect [data-baseweb="select"],
+    button {
+        min-height: 44px;
     }
     .stSelectbox label, .stSelectbox div[role="button"] {
         color: var(--text-color) !important;
