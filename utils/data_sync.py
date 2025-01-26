@@ -249,7 +249,7 @@ def needs_refresh(league_id: int, season: int) -> bool:
     Check if we need to refresh data for a league and season.
     Returns True if:
     - No data exists
-    - Last match was over 24 hours ago and there are unfinished matches
+    - There are unfinished matches in the past that need updating
     - Next match is within 24 hours
     """
     season = int(season)
@@ -292,24 +292,13 @@ def needs_refresh(league_id: int, season: int) -> bool:
                 Match.league_id == league.id,
                 Match.season == season,
                 Match.date >= datetime.now().date(),
-                Match.status == 'NS'
+                Match.status == 'NS'  # Not Started
             )
             .order_by(Match.date)
             .first()
         )
 
         if next_match and next_match.date <= (datetime.now() + timedelta(days=1)).date():
-            return True
-
-        # Also check if standings need refresh (older than 1 hour)
-        latest_standing = (
-            db.query(Standings)
-            .filter_by(league_id=league.id, season=season)
-            .order_by(Standings.last_updated.desc())
-            .first()
-        )
-
-        if not latest_standing or latest_standing.last_updated < datetime.utcnow() - timedelta(hours=1):
             return True
 
         return False

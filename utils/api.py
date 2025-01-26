@@ -8,7 +8,7 @@ from utils.data_sync import sync_matches, needs_refresh
 from utils.football_api import fetch_matches_from_api
 from utils.dev_mode import is_dev_mode
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=3600)  # Cache for 1 hour by default
 def get_league_matches(league_id, season):
     """
     Get match data for a specific league and season.
@@ -63,7 +63,7 @@ def get_available_leagues():
 def get_available_seasons():
     """Return available seasons for selection"""
     return {
-        "2024": "24/25",
+        "2024": "23/24",
         "2023": "23/24",
         "2022": "22/23",
         "2021": "21/22",
