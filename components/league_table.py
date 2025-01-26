@@ -14,7 +14,7 @@ def format_form(form_string):
     form_html = ""
     for result in form_string:
         color = colors.get(result, '#808080')
-        form_html += f'<span style="display: inline-block; text-align: center; width: 20px; color: {color};">{result}</span>'
+        form_html += f'<span style="display: inline-block; text-align: center; width: 24px; color: {color};">{result}</span>'
 
     return form_html
 
@@ -62,7 +62,7 @@ def display_league_table(team_data):
         .team-cell { width: 200px; text-align: left; padding-left: 16px; }
         .num-cell { width: 60px; text-align: center; }
         .goals-cell { width: 80px; text-align: center; }
-        .form-cell { width: 120px; text-align: center; letter-spacing: 2px; }
+        .form-cell { width: 160px; text-align: center; letter-spacing: 4px; }
         .points-cell { width: 60px; text-align: center; font-weight: bold; }
         </style>
         <table class="league-table">
