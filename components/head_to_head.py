@@ -9,13 +9,17 @@ def display_head_to_head(team_data):
         return
 
     # Get sorted list of teams
-    teams = sorted([team['name'] for team in team_data])
+    team_options = [(team['name'], team['id']) for team in team_data]
 
     # Create two columns for team selection
     col1, spacer, col2 = st.columns([2, 1, 2])
 
     with col1:
-        team1 = st.selectbox("Select First Team", teams, key="team1_select")
+        selected_team1 = st.selectbox("Select First Team",
+                                      team_options,
+                                      format_func=lambda option: option[0],
+                                      key="team1_select")
+        team1_name, team1_id = selected_team1
 
     with spacer:
         st.markdown(
@@ -24,15 +28,19 @@ def display_head_to_head(team_data):
 
     with col2:
         # Filter out first team from second selection
-        available_teams = [team for team in teams if team != team1]
-        team2 = st.selectbox("Select Second Team",
-                             available_teams,
-                             key="team2_select")
+        available_teams = [
+            team for team in team_options if team[1] != team1_id
+        ]
+        selected_team2 = st.selectbox("Select Second Team",
+                                      available_teams,
+                                      format_func=lambda option: option[0],
+                                      key="team2_select")
+        team2_name, team2_id = selected_team2
 
     # Get team data
-    team1_data = next((team for team in team_data if team['name'] == team1),
+    team1_data = next((team for team in team_data if team['id'] == team1_id),
                       None)
-    team2_data = next((team for team in team_data if team['name'] == team2),
+    team2_data = next((team for team in team_data if team['id'] == team2_id),
                       None)
 
     if team1_data and team2_data:
@@ -40,7 +48,7 @@ def display_head_to_head(team_data):
         col1, col2 = st.columns(2)
 
         with col1:
-            st.subheader(team1)
+            st.subheader(team1_name)
             st.metric(label="Points",
                       value=team1_data['total_points'],
                       delta=team1_data['total_points'] -
@@ -57,7 +65,7 @@ def display_head_to_head(team_data):
                       delta_color="normal")
 
         with col2:
-            st.subheader(team2)
+            st.subheader(team2_name)
             st.metric(label="Points",
                       value=team2_data['total_points'],
                       delta=team2_data['total_points'] -
@@ -75,39 +83,39 @@ def display_head_to_head(team_data):
 
         # Find head-to-head matches
         h2h_matches = []
+        print(f"team1_data: {team1_data}")
         for match in team1_data['matches']:
             # Check if team2 is the opponent in this match
-            if match['opponent'] == team2:
+            match['is_home'] = match['side'] == 'home'
+            if match['opponent'] == team2_id:
                 h2h_matches.append({
                     'date':
                     match['date'],
                     'home_team':
-                    team1 if match['is_home'] else team2,
+                    team1_name if match['is_home'] else team2_name,
                     'away_team':
-                    team2 if match['is_home'] else team1,
+                    team2_name if match['is_home'] else team1_name,
                     'home_score':
-                    match['goals_for']
-                    if match['is_home'] else match['goals_against'],
+                    match['goals']['home'],
                     'away_score':
-                    match['goals_against']
-                    if match['is_home'] else match['goals_for']
+                    match['goals']['away']
                 })
 
         if h2h_matches:
             st.markdown("### Head-to-Head Matches")
             for match in h2h_matches:
                 with st.container():
-                    col1, col2, col3 = st.columns([2, 1, 2])
+                    col1, col2, col3, col4 = st.columns([2, 2, 1, 2])
 
                     with col1:
-                        st.write(f"{match['home_team']}")
+                        st.markdown(f"*{match['date'].strftime('%d %B %Y')}*")
                     with col2:
+                        st.write(f"{match['home_team']}")
+                    with col3:
                         st.write(
                             f"{match['home_score']} - {match['away_score']}")
-                    with col3:
+                    with col4:
                         st.write(f"{match['away_team']}")
-
-                    st.markdown(f"*{match['date'].strftime('%d %B %Y')}*")
                     st.divider()
         else:
             st.info("No direct matches found between these teams.")
