@@ -45,11 +45,6 @@ st.markdown("""
             font-size: 14px;
         }
 
-        [data-testid="stSidebar"] {
-            min-width: 100% !important;
-            max-width: 100% !important;
-        }
-
         .league-table {
             font-size: 12px !important;
         }
