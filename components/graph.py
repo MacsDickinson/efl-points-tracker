@@ -67,7 +67,9 @@ def plot_cumulative_points(points_df):
             linecolor='rgba(255, 255, 255, 0.2)',
             tickfont=dict(size=12),
             dtick=1,
-            range=[0, points_df['matches_played'].max()]
+            range=[0, points_df['matches_played'].max()],
+            titlefont=dict(color='rgba(200, 200, 200, 1.0)'),  # Lighter title text color
+            tickcolor='rgba(200, 200, 200, 1.0)'  # Lighter tick color
         ),
         yaxis=dict(
             title="Points",
@@ -78,12 +80,14 @@ def plot_cumulative_points(points_df):
             linewidth=2,
             linecolor='rgba(255, 255, 255, 0.2)',
             tickfont=dict(size=12),
-            range=[y_min, y_max]
+            range=[y_min, y_max],
+            titlefont=dict(color='rgba(200, 200, 200, 1.0)'),  # Lighter title text color
+            tickcolor='rgba(200, 200, 200, 1.0)'  # Lighter tick color
         ),
         hoverlabel=dict(
             bgcolor='rgba(17, 17, 17, 0.95)',
             bordercolor='rgba(255, 255, 255, 0.2)',
-            font=dict(size=12)
+            font=dict(size=12, color='rgba(200, 200, 200, 1.0)')  # Lighter font color
         ),
         legend=dict(
             yanchor="top",
@@ -92,7 +96,8 @@ def plot_cumulative_points(points_df):
             x=1.02,
             bgcolor='rgba(17, 17, 17, 0.8)',
             bordercolor='rgba(255, 255, 255, 0.2)',
-            borderwidth=1
+            borderwidth=1,
+            font=dict(color='rgba(200, 200, 200, 1.0)')  # Lighter legend text color
         ),
         margin=dict(l=60, r=160, t=40, b=60)
     )
