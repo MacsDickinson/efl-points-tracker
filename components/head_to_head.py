@@ -28,12 +28,8 @@ def display_head_to_head(team_data):
             unsafe_allow_html=True)
 
     with col2:
-        # Filter out first team from second selection
-        available_teams = [
-            team for team in team_options if team[1] != team1_id
-        ]
         selected_team2 = st.selectbox("Select Second Team",
-                                      available_teams,
+                                      team_options,
                                       format_func=lambda option: option[0],
                                       key="team2_select")
         team2_name, team2_id = selected_team2

@@ -130,11 +130,14 @@ def get_league_matches(league_id, season):
 def get_available_leagues():
     """Return available leagues for selection"""
     return {
-        "39": "Premier League",
-        "40": "Championship",
-        "61": "Ligue 1",
-        "71": "Serie A",
-        "78": "Bundesliga"
+        "39": "🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League",
+        "40": "🏴󠁧󠁢󠁥󠁮󠁧󠁿 Championship",
+        "140": "🇪🇸 La Liga",
+        "61": "🇫🇷 Ligue 1",
+        "78": "🇩🇪 Bundesliga",
+        "135": "🇹🇯 Serie A",
+        "179": "🏴󠁧󠁢󠁳󠁣󠁴󠁿 Premiership",
+        "253": "🇺🇸 MLS"
     }
 
 
@@ -158,11 +161,16 @@ def fetch_head_to_head_from_api(team1, team2):
         for match in matches:
             is_team1_home = match.home_team_id == team1['id']
             h2h_matches.append({
-                'date': match.date,
-                'home_team': team1['name'] if is_team1_home else team2['name'],
-                'away_team': team2['name'] if is_team1_home else team1['name'],
-                'home_score': match.home_score,
-                'away_score': match.away_score
+                'date':
+                match.date,
+                'home_team':
+                team1['name'] if is_team1_home else team2['name'],
+                'away_team':
+                team2['name'] if is_team1_home else team1['name'],
+                'home_score':
+                match.home_score,
+                'away_score':
+                match.away_score
             })
 
         return h2h_matches
