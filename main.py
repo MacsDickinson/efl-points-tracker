@@ -15,6 +15,11 @@ st.markdown("""
         background-color: rgb(17, 17, 17);
         color: rgba(255, 255, 255, 0.9);
     }
+    .block-container {
+        max-width: 95rem !important;  /* Increased from 46rem */
+        padding-left: 2rem !important;
+        padding-right: 2rem !important;
+    }
     .stSelectbox label, .stSelectbox div[role="button"] {
         color: rgba(255, 255, 255, 0.9) !important;
     }

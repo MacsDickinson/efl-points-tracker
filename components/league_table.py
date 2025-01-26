@@ -1,5 +1,6 @@
 import streamlit as st
 
+
 def format_form(form_string):
     """Format the form string with colored indicators"""
     if not form_string:
@@ -18,6 +19,7 @@ def format_form(form_string):
 
     return form_html
 
+
 def display_league_table(team_data):
     """Display league table with all statistics"""
     if not team_data:
@@ -27,13 +29,9 @@ def display_league_table(team_data):
     # Sort teams by points (considering deductions)
     sorted_teams = sorted(
         team_data,
-        key=lambda x: (
-            x['total_points'],
-            x['goal_difference'],
-            x['goals_for']
-        ),
-        reverse=True
-    )
+        key=lambda x:
+        (x['total_points'], x['goal_difference'], x['goals_for']),
+        reverse=True)
 
     # Create the table header with proper alignment and widths
     st.markdown("""
@@ -59,12 +57,12 @@ def display_league_table(team_data):
         .league-table tr:hover {
             background-color: rgba(255, 255, 255, 0.05);
         }
-        .league-table .pos-cell { width: 50px; text-align: center; }
-        .league-table .team-cell { width: 250px; text-align: left; padding-left: 24px; }
-        .league-table .num-cell { width: 70px; text-align: center; }
-        .league-table .goals-cell { width: 100px; text-align: center; }
-        .league-table .form-cell { width: 200px; text-align: center; letter-spacing: 6px; }
-        .league-table .points-cell { width: 70px; text-align: center; font-weight: bold; }
+        .pos-cell { width: 50px; text-align: center; }
+        .team-cell { width: 250px; text-align: left; padding-left: 24px; }
+        .num-cell { width: 70px; text-align: center; }
+        .goals-cell { width: 100px; text-align: center; }
+        .form-cell { width: 200px; text-align: center; letter-spacing: 6px; }
+        .points-cell { width: 70px; text-align: center; font-weight: bold; }
         </style>
         <table class="league-table">
         <tr>
@@ -79,7 +77,8 @@ def display_league_table(team_data):
             <th class="form-cell">Last 5</th>
             <th class="points-cell">PTS</th>
         </tr>
-    """, unsafe_allow_html=True)
+    """,
+                unsafe_allow_html=True)
 
     # Add rows for each team
     for team in sorted_teams:
