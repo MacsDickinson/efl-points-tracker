@@ -182,7 +182,7 @@ def sync_standings(db: Session, league_id: int, season: int):
         # Get existing teams dictionary
         existing_teams = {
             t.api_id: t.id
-            for t in db.query(Team).filter_by(league_id=league.id).all()
+            for t in db.query(Team).all()
         }
 
         # Update standings for each team
