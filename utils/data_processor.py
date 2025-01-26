@@ -32,8 +32,8 @@ def calculate_cumulative_points(matches_df):
 
         points_data = []
 
-        # Initialize all teams with their starting points (0 or deduction)
         for team in all_teams:
+            # Get team's points deduction from standings
             standing = team_standings.get(team)
             points_deduction = standing.points_deduction if standing else 0
 
@@ -41,7 +41,7 @@ def calculate_cumulative_points(matches_df):
             points_data.append({
                 'team': team,
                 'date': matches_df['date'].min(),
-                'points': -points_deduction,  # Start with negative deduction
+                'points': 0,  # Start at 0
                 'matches_played': 0,
                 'goals_for': 0,
                 'goals_against': 0,
@@ -49,7 +49,7 @@ def calculate_cumulative_points(matches_df):
             })
 
             # Process matches for this team
-            current_points = -points_deduction  # Start with points deduction
+            current_points = 0  # Start at 0, apply deduction at the end
             goals_for = 0
             goals_against = 0
             matches_count = 0
@@ -63,7 +63,6 @@ def calculate_cumulative_points(matches_df):
             for _, match in team_matches.iterrows():
                 matches_count += 1
 
-                # Calculate points from this match
                 if match['home_team'] == team:
                     match_goals_for = match['home_score']
                     match_goals_against = match['away_score']
@@ -81,11 +80,11 @@ def calculate_cumulative_points(matches_df):
                 elif match_goals_for == match_goals_against:
                     current_points += 1
 
-                # Record the state after this match, keeping points deduction throughout
+                # Record the state after this match, applying points deduction
                 points_data.append({
                     'team': team,
                     'date': match['date'],
-                    'points': current_points,  # Points already include deduction from start
+                    'points': current_points - points_deduction,  # Apply deduction to final points
                     'matches_played': matches_count,
                     'goals_for': goals_for,
                     'goals_against': goals_against,
