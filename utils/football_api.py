@@ -13,6 +13,8 @@ def fetch_matches_from_api(league_id, season):
             "X-RapidAPI-Host": "api-football-v1.p.rapidapi.com"
         }
 
+        print(f"Fetching matches from API for league {league_id}, season {season}")
+
         # Get all fixtures for the league and season
         response = requests.get(
             f"{FOOTBALL_API_BASE}/fixtures",
@@ -36,6 +38,8 @@ def fetch_matches_from_api(league_id, season):
             return pd.DataFrame()
 
         fixtures = data["response"]
+        print(f"Received {len(fixtures)} matches from API")
+
         if not fixtures:
             st.warning("No matches found for the selected league and season.")
             return pd.DataFrame()
@@ -56,7 +60,9 @@ def fetch_matches_from_api(league_id, season):
             }
             matches.append(match)
 
-        return pd.DataFrame(matches)
+        matches_df = pd.DataFrame(matches)
+        print(f"Processed {len(matches_df)} matches into DataFrame")
+        return matches_df
 
     except requests.exceptions.RequestException as e:
         st.error(f"⚠️ Error fetching match data: {str(e)}")

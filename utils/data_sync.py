@@ -21,6 +21,9 @@ def sync_matches(league_id: int, season: int):
         if api_matches.empty:
             return
 
+        print(f"\nStarting sync for league {league_id}, season {season}")
+        print(f"Retrieved {len(api_matches)} matches from API")
+
         # Show progress bar
         progress_text = "Loading match data..."
         total_matches = len(api_matches)
@@ -44,8 +47,12 @@ def sync_matches(league_id: int, season: int):
         existing_matches = {
             (m.season, m.league_id, m.home_team_id, m.away_team_id): m
             for m in db.query(Match).filter_by(season=season,
-                                               league_id=league.id).all()
+                                              league_id=league.id).all()
         }
+
+        print(f"Found {len(existing_matches)} existing matches in database")
+        new_matches_count = 0
+        updated_matches_count = 0
 
         # Process matches in batches
         batch_size = 50
@@ -66,17 +73,17 @@ def sync_matches(league_id: int, season: int):
 
                         # Get or create teams efficiently
                         home_team = get_or_create_team(db, row['home_team'],
-                                                       row['home_team_id'],
-                                                       league.id,
-                                                       existing_teams)
+                                                      row['home_team_id'],
+                                                      league.id,
+                                                      existing_teams)
                         away_team = get_or_create_team(db, row['away_team'],
-                                                       row['away_team_id'],
-                                                       league.id,
-                                                       existing_teams)
+                                                      row['away_team_id'],
+                                                      league.id,
+                                                      existing_teams)
 
                         # Check if match exists using the pre-fetched data
                         match_key = (season, league.id, home_team.id,
-                                     away_team.id)
+                                    away_team.id)
                         match = existing_matches.get(match_key)
 
                         # Convert scores
@@ -91,20 +98,22 @@ def sync_matches(league_id: int, season: int):
                                 match.home_score = home_score
                                 match.away_score = away_score
                                 match.status = row['status']
+                                updated_matches_count += 1
                         else:
                             # Create new match
                             match = Match(api_id=row['fixture_id'],
-                                          date=pd.to_datetime(
-                                              row['date']).date(),
-                                          season=season,
-                                          league_id=league.id,
-                                          home_team_id=home_team.id,
-                                          away_team_id=away_team.id,
-                                          home_score=home_score,
-                                          away_score=away_score,
-                                          status=row['status'])
+                                         date=pd.to_datetime(
+                                             row['date']).date(),
+                                         season=season,
+                                         league_id=league.id,
+                                         home_team_id=home_team.id,
+                                         away_team_id=away_team.id,
+                                         home_score=home_score,
+                                         away_score=away_score,
+                                         status=row['status'])
                             db.add(match)
                             existing_matches[match_key] = match
+                            new_matches_count += 1
 
                     except Exception as e:
                         if is_dev_mode():
@@ -115,6 +124,11 @@ def sync_matches(league_id: int, season: int):
 
             # Commit each batch
             db.commit()
+
+        print(f"Sync complete:")
+        print(f"- {new_matches_count} new matches added")
+        print(f"- {updated_matches_count} existing matches updated")
+        print(f"- {len(existing_matches)} total matches in database")
 
         # Sync standings after matches are synced
         sync_standings(db, league_id, season)
@@ -292,7 +306,7 @@ def needs_refresh(league_id: int, season: int) -> bool:
             return True
 
         print("No data sync required")
-        
+
         return False
 
     finally:
