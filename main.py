@@ -118,6 +118,14 @@ st.markdown("""
     div[data-testid="stToolbar"] {
         color: var(--text-color);
     }
+    /* Override Streamlit emotion cache classes */
+    .st-emotion-cache-1rrh444,
+    .st-emotion-cache-183lzff,
+    .st-emotion-cache-10trblm,
+    .st-emotion-cache-q8sbsg p,
+    .st-emotion-cache-1n76uvr {
+        color: var(--text-color) !important;
+    }
     </style>
 """,
             unsafe_allow_html=True)
