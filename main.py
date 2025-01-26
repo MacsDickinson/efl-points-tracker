@@ -108,7 +108,14 @@ st.markdown("""
     .stTabs [data-baseweb="tab-highlight"] {
         background-color: var(--hover-bg);
     }
-    .stMarkdown div {
+    .stMarkdown div, .stMarkdown p, .stMarkdown span,
+    .element-container, .stTextInput label, 
+    .stSelectbox label, .stNumberInput label,
+    .css-1dp5vir, .css-81oif8, .css-10trblm {
+        color: var(--text-color) !important;
+    }
+    
+    div[data-testid="stToolbar"] {
         color: var(--text-color);
     }
     </style>
