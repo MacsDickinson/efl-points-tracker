@@ -9,6 +9,7 @@ from utils.football_api import fetch_matches_from_api
 from utils.dev_mode import is_dev_mode
 from sqlalchemy import text
 
+
 def get_team_data_with_matches(league_id: int, season: int):
     """
     Get team data including matches in an efficient structure.
@@ -26,30 +27,19 @@ def get_team_data_with_matches(league_id: int, season: int):
             return []
 
         # Get all teams with their standings for this league and season
-        teams_with_standings = (
-            db.query(Team, Standings)
-            .join(Standings, Team.id == Standings.team_id)
-            .filter(
+        teams_with_standings = (db.query(Team, Standings).join(
+            Standings, Team.id == Standings.team_id).filter(
                 Standings.league_id == league.id,
-                Standings.season == season
-            )
-            .all()
-        )
+                Standings.season == season).all())
 
         team_data = []
         for team, standing in teams_with_standings:
             # Get all matches for this team
-            matches = (
-                db.query(Match)
-                .filter(
-                    Match.league_id == league.id,
-                    Match.season == season,
-                    Match.status == 'FT',
-                    ((Match.home_team_id == team.id) | (Match.away_team_id == team.id))
-                )
-                .order_by(Match.date)
-                .all()
-            )
+            matches = (db.query(Match).filter(
+                Match.league_id == league.id, Match.season == season,
+                Match.status == 'FT',
+                ((Match.home_team_id == team.id) |
+                 (Match.away_team_id == team.id))).order_by(Match.date).all())
 
             # Process matches into required format
             processed_matches = []
@@ -108,6 +98,7 @@ def get_team_data_with_matches(league_id: int, season: int):
     finally:
         db.close()
 
+
 @st.cache_data(ttl=3600)  # Cache for 1 hour by default
 def get_league_matches(league_id, season):
     """
@@ -120,16 +111,24 @@ def get_league_matches(league_id, season):
     matches_data = []
     for team in team_data:
         for match in team['matches']:
-            if match['side'] == 'home':  # Only add matches where team is home to avoid duplicates
+            if match[
+                    'side'] == 'home':  # Only add matches where team is home to avoid duplicates
                 matches_data.append({
-                    'date': match['date'],
-                    'home_team': team['name'],
-                    'away_team': next(t['name'] for t in team_data if t['id'] == match['opponent']),
-                    'home_score': match['goals']['home'],
-                    'away_score': match['goals']['away']
+                    'date':
+                    match['date'],
+                    'home_team':
+                    team['name'],
+                    'away_team':
+                    next(t['name'] for t in team_data
+                         if t['id'] == match['opponent']),
+                    'home_score':
+                    match['goals']['home'],
+                    'away_score':
+                    match['goals']['away']
                 })
 
     return pd.DataFrame(matches_data)
+
 
 @st.cache_data(ttl=3600)
 def get_available_leagues():
@@ -140,6 +139,7 @@ def get_available_leagues():
         "41": "League One",
         "42": "League Two",
     }
+
 
 def get_available_seasons():
     """Return available seasons for selection"""

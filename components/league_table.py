@@ -1,4 +1,6 @@
 import streamlit as st
+import base64
+from utils.data_processor import get_team_colors
 
 
 def format_form(form_string):
@@ -20,24 +22,20 @@ def format_form(form_string):
     return form_html
 
 
-def create_sparkline(matches, width=100, height=30):
+def create_sparkline(matches,
+                     colour="rgba(255,255,255,0.7)",
+                     max_points=100,
+                     width=100,
+                     height=30):
     """Create a sparkline SVG from match points progression"""
     if not matches:
         return ""
 
-    # Calculate points for each match
-    points = [0]  # Start with 0 points
-    current_points = 0
-    for match in matches:
-        if match['result'] == 'win':
-            current_points += 3
-        elif match['result'] == 'draw':
-            current_points += 1
-        points.append(current_points)
+    # Get cumulative points for each match
+    points = [match['cumulative_total'] for match in matches]
 
     # Calculate min and max for scaling
-    min_points = min(points)
-    max_points = max(points)
+    min_points = 0
     point_range = max(1, max_points - min_points)  # Avoid division by zero
 
     # Create point coordinates
@@ -53,9 +51,19 @@ def create_sparkline(matches, width=100, height=30):
     # Create SVG path
     path = f"M{' L'.join(points_coords)}"
 
-    return f"""<svg width="{width}" height="{height}" style="display: inline-block; vertical-align: middle;">
-        <path d="{path}" stroke="rgba(255,255,255,0.7)" stroke-width="2" fill="none" vector-effect="non-scaling-stroke"/>
-    </svg>"""
+    svg = f"""
+    <svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" style="display: inline-block; vertical-align: middle;">
+        <path 
+            d="{path}" 
+            stroke="{colour}" 
+            stroke-width="2" 
+            fill="none" 
+            vector-effect="non-scaling-stroke"
+        />
+    </svg>
+    """
+    b64 = base64.b64encode(svg.encode('utf-8')).decode("utf-8")
+    return r'<img src="data:image/svg+xml;base64,%s"/>' % b64
 
 
 def display_league_table(team_data):
@@ -65,11 +73,9 @@ def display_league_table(team_data):
         return
 
     # Sort teams by points (considering deductions)
-    sorted_teams = sorted(
-        team_data,
-        key=lambda x:
-        (x['total_points'], x['goal_difference'], x['goals_for']),
-        reverse=True)
+    sorted_teams = sorted(team_data,
+                          key=lambda x: (x['position']),
+                          reverse=False)
 
     # First, inject the CSS separately
     st.html("""
@@ -127,13 +133,20 @@ def display_league_table(team_data):
     table_rows.append(header_row)
 
     # Add data rows
+    max_points = sorted_teams[0]['total_points']
+
     for team in sorted_teams:
         wins = sum(1 for m in team['matches'] if m['result'] == 'win')
         draws = sum(1 for m in team['matches'] if m['result'] == 'draw')
         losses = sum(1 for m in team['matches'] if m['result'] == 'loss')
+        team_colour = get_team_colors().get(team['name'], '#808080')
 
         form_display = format_form(team['form']) if team['form'] else ""
-        sparkline = create_sparkline(team['matches'])
+        sparkline = create_sparkline(team['matches'],
+                                     colour=team_colour,
+                                     max_points=max_points)
+
+        print(f"sparkline: {sparkline}")
 
         row = f"""
         <tr>
