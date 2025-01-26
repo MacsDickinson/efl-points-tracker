@@ -2,6 +2,7 @@ import streamlit as st
 import base64
 from utils.data_processor import get_team_colors
 
+
 def format_form(form_string):
     """Format the form string with colored indicators"""
     if not form_string:
@@ -20,20 +21,18 @@ def format_form(form_string):
 
     return form_html
 
-def create_sparkline(matches, colour="currentColor", max_points=100, width=100, height=30):
+
+def create_sparkline(matches,
+                     colour="rgba(255,255,255,0.7)",
+                     max_points=100,
+                     width=100,
+                     height=30):
     """Create a sparkline SVG from match points progression"""
     if not matches:
         return ""
 
-    # Calculate points for each match
-    points = [0]  # Start with 0 points
-    current_points = 0
-    for match in matches:
-        if match['result'] == 'win':
-            current_points += 3
-        elif match['result'] == 'draw':
-            current_points += 1
-        points.append(current_points)
+    # Get cumulative points for each match
+    points = [match['cumulative_total'] for match in matches]
 
     # Calculate min and max for scaling
     min_points = 0
@@ -66,6 +65,7 @@ def create_sparkline(matches, colour="currentColor", max_points=100, width=100, 
     b64 = base64.b64encode(svg.encode('utf-8')).decode("utf-8")
     return r'<img src="data:image/svg+xml;base64,%s"/>' % b64
 
+
 def display_league_table(team_data):
     """Display league table with all statistics"""
     if not team_data:
@@ -74,11 +74,11 @@ def display_league_table(team_data):
 
     # Sort teams by points (considering deductions)
     sorted_teams = sorted(team_data,
-                         key=lambda x: (x['position']),
-                         reverse=False)
+                          key=lambda x: (x['position']),
+                          reverse=False)
 
     # First, inject the CSS separately
-    st.markdown("""
+    st.html("""
     <style>
     .league-table {
         font-family: monospace;
@@ -109,7 +109,7 @@ def display_league_table(team_data):
     .points-cell { width: 70px; text-align: center; font-weight: bold; }
     .trend-cell { width: 120px; text-align: center; }
     </style>
-    """, unsafe_allow_html=True)
+    """)
 
     # Then build and inject the table HTML separately
     table_rows = []
@@ -133,7 +133,7 @@ def display_league_table(team_data):
     table_rows.append(header_row)
 
     # Add data rows
-    max_points = max(team['total_points'] for team in sorted_teams) if sorted_teams else 0
+    max_points = sorted_teams[0]['total_points']
 
     for team in sorted_teams:
         wins = sum(1 for m in team['matches'] if m['result'] == 'win')
@@ -143,8 +143,8 @@ def display_league_table(team_data):
 
         form_display = format_form(team['form']) if team['form'] else ""
         sparkline = create_sparkline(team['matches'],
-                                   colour=team_colour,
-                                   max_points=max_points)
+                                     colour=team_colour,
+                                     max_points=max_points)
 
         row = f"""
         <tr>
@@ -167,4 +167,4 @@ def display_league_table(team_data):
     table_html = f'<table class="league-table">{"".join(table_rows)}</table>'
 
     # Render the table
-    st.markdown(table_html, unsafe_allow_html=True)
+    st.html(table_html)
