@@ -8,17 +8,17 @@ def calculate_cumulative_points(matches_df):
     if matches_df.empty:
         return pd.DataFrame()
 
-    # Sort matches by actual date played
+    # Sort matches by date played
     matches_df = matches_df.sort_values('date')
 
     # Get database session
     db = next(get_db())
 
     try:
-        # Get all unique teams and their latest standings in a single query
+        # Get all unique teams
         all_teams = set(matches_df['home_team'].unique()) | set(matches_df['away_team'].unique())
 
-        # Fetch all standings for all teams in one query
+        # Get latest standings for all teams in one query
         team_standings = {}
         standings_query = (
             db.query(Standings)
@@ -32,55 +32,64 @@ def calculate_cumulative_points(matches_df):
 
         points_data = []
 
-        # Initialize points data with deductions
+        # Initialize all teams with their starting points (0 or deduction)
         for team in all_teams:
             standing = team_standings.get(team)
-            deduction = standing.points_deduction if standing else 0
+            points_deduction = standing.points_deduction if standing else 0
 
-            # Add initial point (with deduction) for gameweek 0
+            # Add starting point at match day 0
             points_data.append({
                 'team': team,
                 'date': matches_df['date'].min(),
-                'points': -abs(deduction),
+                'points': -points_deduction,  # Negative because deductions reduce points
                 'matches_played': 0,
                 'goals_for': 0,
                 'goals_against': 0,
-                'goal_difference': 0,
-                'form': standing.form if standing else None
+                'goal_difference': 0
             })
 
-            # Process each team's matches
+            # Process matches for this team
+            current_points = -points_deduction  # Start with deduction
+            goals_for = 0
+            goals_against = 0
+            matches_count = 0
+
+            # Get all matches for this team
             team_matches = matches_df[
                 (matches_df['home_team'] == team) | 
                 (matches_df['away_team'] == team)
             ].sort_values('date')
 
-            cumulative_points = -abs(deduction)
-            cumulative_goals_for = 0
-            cumulative_goals_against = 0
-
             for _, match in team_matches.iterrows():
-                is_home = match['home_team'] == team
-                team_goals = match['home_score'] if is_home else match['away_score']
-                opponent_goals = match['away_score'] if is_home else match['home_score']
+                matches_count += 1
 
-                if team_goals > opponent_goals:
-                    cumulative_points += 3
-                elif team_goals == opponent_goals:
-                    cumulative_points += 1
+                # Calculate points from this match
+                if match['home_team'] == team:
+                    match_goals_for = match['home_score']
+                    match_goals_against = match['away_score']
+                else:
+                    match_goals_for = match['away_score']
+                    match_goals_against = match['home_score']
 
-                cumulative_goals_for += team_goals
-                cumulative_goals_against += opponent_goals
+                # Update running totals
+                goals_for += match_goals_for
+                goals_against += match_goals_against
 
+                # Update points based on result
+                if match_goals_for > match_goals_against:
+                    current_points += 3
+                elif match_goals_for == match_goals_against:
+                    current_points += 1
+
+                # Record the state after this match
                 points_data.append({
                     'team': team,
                     'date': match['date'],
-                    'points': cumulative_points,
-                    'matches_played': len(points_data) - 1,  # -1 for initial point
-                    'goals_for': cumulative_goals_for,
-                    'goals_against': cumulative_goals_against,
-                    'goal_difference': cumulative_goals_for - cumulative_goals_against,
-                    'form': standing.form if standing else None
+                    'points': current_points,
+                    'matches_played': matches_count,
+                    'goals_for': goals_for,
+                    'goals_against': goals_against,
+                    'goal_difference': goals_for - goals_against
                 })
 
         return pd.DataFrame(points_data)
