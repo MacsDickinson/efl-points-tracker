@@ -1,4 +1,5 @@
 import streamlit as st
+import pandas as pd
 
 # Set page config must be the first Streamlit command
 st.set_page_config(page_title="Football League Dashboard",
@@ -7,7 +8,7 @@ st.set_page_config(page_title="Football League Dashboard",
                    initial_sidebar_state="collapsed")
 
 import os
-from utils.api import get_league_matches, get_available_leagues, get_available_seasons
+from utils.api import get_league_matches, get_available_leagues, get_available_seasons, get_team_data_with_matches
 from utils.data_processor import calculate_cumulative_points
 from components.graph import plot_cumulative_points, display_team_stats
 from db.database import init_db
@@ -90,8 +91,36 @@ def main():
 
     # Main content
     with st.spinner("Loading match data..."):
-        matches_df = get_league_matches(selected_league, selected_season)
-        points_df = calculate_cumulative_points(matches_df)
+        # Get team data with matches using new structure
+        team_data = get_team_data_with_matches(int(selected_league), int(selected_season))
+
+        # Convert team data to points dataframe for visualization
+        points_data = []
+        for team in team_data:
+            # Add initial point (with deduction applied)
+            points_data.append({
+                'team': team['name'],
+                'date': team['matches'][0]['date'] if team['matches'] else None,
+                'points': -team['points_deduction'],  # Start with deduction
+                'matches_played': 0,
+                'goals_for': 0,
+                'goals_against': 0,
+                'goal_difference': 0
+            })
+
+            # Add points progression for each match
+            for match in team['matches']:
+                points_data.append({
+                    'team': team['name'],
+                    'date': match['date'],
+                    'points': match['cumulative_total'],
+                    'matches_played': match['gameweek'],
+                    'goals_for': team['goals_for'],
+                    'goals_against': team['goals_against'],
+                    'goal_difference': team['goal_difference']
+                })
+
+        points_df = pd.DataFrame(points_data)
 
         tab1, tab2 = st.tabs(["📈 Points Progression", "📊 Team Statistics"])
 
