@@ -21,23 +21,6 @@ def plot_cumulative_points(points_df):
     # Create figure with sophisticated styling
     fig = go.Figure()
 
-    # Prepare hover data for each match number
-    max_matches = points_df['matches_played'].max()
-    hover_data = {}
-
-    # Create hover data dictionary for each match number
-    for match in range(1, max_matches + 1):
-        match_data = points_df[points_df['matches_played'] == match]
-        if not match_data.empty:
-            teams_points = match_data[['team', 'points', 'goal_difference', 'goals_for']].values.tolist()
-            # Sort by points in descending order
-            teams_points.sort(key=lambda x: (-x[1], -x[2], -x[3]))
-            # Format as "team - points (GD: x, GF: y)"
-            hover_data[match] = "<br>".join([
-                f"{team} - {int(points)}pts (GD: {gd:+d}, GF: {gf})"
-                for team, points, gd, gf in teams_points
-            ])
-
     # Sort teams by their final points
     final_points = points_df.groupby('team')['points'].last().sort_values(ascending=False)
     sorted_teams = final_points.index.tolist()
@@ -46,9 +29,6 @@ def plot_cumulative_points(points_df):
     for team in sorted_teams:
         team_data = points_df[points_df['team'] == team].sort_values('matches_played')
         team_color = get_team_colors().get(team, '#808080')  # Default to gray if no color defined
-
-        # Create hover text list
-        hover_text = [hover_data.get(match, "") for match in team_data['matches_played']]
 
         fig.add_trace(
             go.Scatter(
@@ -61,13 +41,14 @@ def plot_cumulative_points(points_df):
                     width=3,
                     shape='spline',  # Curved lines
                     smoothing=0.8
-                ),
-                hovertemplate="<b>Gameweek %{x}</b><br><br>%{text}<extra></extra>",
-                text=hover_text
+                )
             )
         )
 
-    # Enhanced layout with dark theme
+    # Enhanced layout with dark theme and forced y-axis range
+    min_points = points_df['points'].min()
+    y_min = min(0, min_points - 2)  # Start below zero if there are deductions
+
     fig.update_layout(
         template="plotly_dark",
         plot_bgcolor='rgba(17, 17, 17, 0.9)',
@@ -81,7 +62,8 @@ def plot_cumulative_points(points_df):
             linewidth=2,
             linecolor='rgba(255, 255, 255, 0.2)',
             tickfont=dict(size=12),
-            dtick=1  # Show every match number
+            dtick=1,  # Show every match number
+            range=[0, points_df['matches_played'].max()]  # Start from 0
         ),
         yaxis=dict(
             title="Points",
@@ -91,7 +73,8 @@ def plot_cumulative_points(points_df):
             showline=True,
             linewidth=2,
             linecolor='rgba(255, 255, 255, 0.2)',
-            tickfont=dict(size=12)
+            tickfont=dict(size=12),
+            range=[y_min, points_df['points'].max() + 2]  # Ensure y-axis includes negative points
         ),
         hoverdistance=100,  # Reduce hover "catch" distance
         hovermode='closest',  # Change to closest instead of unified
