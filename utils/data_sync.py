@@ -7,7 +7,6 @@ from utils.football_api import fetch_matches_from_api, fetch_standings_from_api
 from utils.dev_mode import log_error, is_dev_mode
 import streamlit as st
 
-
 def sync_matches(league_id: int, season: int):
     """
     Sync matches for a specific league and season with progress tracking.
@@ -29,103 +28,109 @@ def sync_matches(league_id: int, season: int):
         total_matches = len(api_matches)
         progress_bar = st.progress(0, text=progress_text)
 
-        # Get or create league (with error handling)
+        # Get or create league
         league = db.query(League).filter_by(api_id=league_id).first()
         if not league:
             league = League(api_id=league_id,
-                            name=api_matches['league_name'].iloc[0])
+                          name=api_matches['league_name'].iloc[0])
             db.add(league)
             db.commit()
 
-        # Pre-fetch existing teams for this league to reduce database queries
+        # Pre-fetch existing teams for this league
         existing_teams = {
             (t.api_id, t.league_id): t
             for t in db.query(Team).filter_by(league_id=league.id).all()
         }
 
-        # Pre-fetch existing matches to avoid duplicates
+        # Pre-fetch existing matches
         existing_matches = {
             (m.season, m.league_id, m.home_team_id, m.away_team_id): m
             for m in db.query(Match).filter_by(season=season,
-                                              league_id=league.id).all()
+                                             league_id=league.id).all()
         }
 
         print(f"Found {len(existing_matches)} existing matches in database")
         new_matches_count = 0
         updated_matches_count = 0
+        processed_matches = 0
 
-        # Process matches in batches
+        # Process matches in smaller batches for better control
         batch_size = 50
-        for batch_idx in range(0, len(api_matches), batch_size):
-            batch_end = min(batch_idx + batch_size, len(api_matches))
-            batch = api_matches.iloc[batch_idx:batch_end]
+        total_batches = (len(api_matches) + batch_size - 1) // batch_size
 
-            with db.begin_nested():  # Create savepoint
-                for idx, row in batch.iterrows():
-                    try:
-                        # Update progress
-                        progress = (batch_idx + idx + 1) / total_matches
-                        progress_bar.progress(
-                            progress,
-                            text=
-                            f"{progress_text} ({batch_idx + idx + 1}/{total_matches})"
+        for batch_idx in range(total_batches):
+            start_idx = batch_idx * batch_size
+            end_idx = min(start_idx + batch_size, len(api_matches))
+            batch = api_matches.iloc[start_idx:end_idx]
+
+            print(f"Processing batch {batch_idx + 1}/{total_batches} (matches {start_idx + 1}-{end_idx})")
+
+            for _, row in batch.iterrows():
+                try:
+                    # Update progress
+                    processed_matches += 1
+                    progress = processed_matches / total_matches
+                    progress_bar.progress(
+                        progress,
+                        text=f"{progress_text} ({processed_matches}/{total_matches})"
+                    )
+
+                    # Get or create teams efficiently
+                    home_team = get_or_create_team(db, row['home_team'],
+                                                 row['home_team_id'],
+                                                 league.id,
+                                                 existing_teams)
+                    away_team = get_or_create_team(db, row['away_team'],
+                                                 row['away_team_id'],
+                                                 league.id,
+                                                 existing_teams)
+
+                    # Check if match exists
+                    match_key = (season, league.id, home_team.id, away_team.id)
+                    match = existing_matches.get(match_key)
+
+                    # Convert scores
+                    home_score = int(row['home_score']) if pd.notna(
+                        row['home_score']) else None
+                    away_score = int(row['away_score']) if pd.notna(
+                        row['away_score']) else None
+
+                    if match:
+                        # Update only if scores changed
+                        if match.home_score != home_score or match.away_score != away_score:
+                            match.home_score = home_score
+                            match.away_score = away_score
+                            match.status = row['status']
+                            updated_matches_count += 1
+                    else:
+                        # Create new match
+                        match = Match(
+                            api_id=row['fixture_id'],
+                            date=pd.to_datetime(row['date']).date(),
+                            season=season,
+                            league_id=league.id,
+                            home_team_id=home_team.id,
+                            away_team_id=away_team.id,
+                            home_score=home_score,
+                            away_score=away_score,
+                            status=row['status']
                         )
+                        db.add(match)
+                        existing_matches[match_key] = match
+                        new_matches_count += 1
 
-                        # Get or create teams efficiently
-                        home_team = get_or_create_team(db, row['home_team'],
-                                                      row['home_team_id'],
-                                                      league.id,
-                                                      existing_teams)
-                        away_team = get_or_create_team(db, row['away_team'],
-                                                      row['away_team_id'],
-                                                      league.id,
-                                                      existing_teams)
+                except Exception as e:
+                    if is_dev_mode():
+                        log_error(f"Error processing match: {row['fixture_id']}", e)
+                    print(f"Error processing match {row['fixture_id']}: {str(e)}")
+                    continue
 
-                        # Check if match exists using the pre-fetched data
-                        match_key = (season, league.id, home_team.id,
-                                    away_team.id)
-                        match = existing_matches.get(match_key)
-
-                        # Convert scores
-                        home_score = int(row['home_score']) if pd.notna(
-                            row.get('home_score')) else None
-                        away_score = int(row['away_score']) if pd.notna(
-                            row.get('away_score')) else None
-
-                        if match:
-                            # Update only if scores changed
-                            if match.home_score != home_score or match.away_score != away_score:
-                                match.home_score = home_score
-                                match.away_score = away_score
-                                match.status = row['status']
-                                updated_matches_count += 1
-                        else:
-                            # Create new match
-                            match = Match(api_id=row['fixture_id'],
-                                         date=pd.to_datetime(
-                                             row['date']).date(),
-                                         season=season,
-                                         league_id=league.id,
-                                         home_team_id=home_team.id,
-                                         away_team_id=away_team.id,
-                                         home_score=home_score,
-                                         away_score=away_score,
-                                         status=row['status'])
-                            db.add(match)
-                            existing_matches[match_key] = match
-                            new_matches_count += 1
-
-                    except Exception as e:
-                        if is_dev_mode():
-                            log_error(
-                                f"Error processing match: {row['fixture_id']}",
-                                e)
-                        continue
-
-            # Commit each batch
+            # Commit after each batch
             db.commit()
+            print(f"Batch {batch_idx + 1} complete: {new_matches_count} new, {updated_matches_count} updated")
 
-        print(f"Sync complete:")
+        print(f"\nSync complete:")
+        print(f"- Processed {processed_matches}/{total_matches} matches")
         print(f"- {new_matches_count} new matches added")
         print(f"- {updated_matches_count} existing matches updated")
         print(f"- {len(existing_matches)} total matches in database")
@@ -145,7 +150,6 @@ def sync_matches(league_id: int, season: int):
             raise Exception("Failed to update match data") from e
     finally:
         db.close()
-
 
 def sync_standings(db: Session, league_id: int, season: int):
     """Sync standings data from the API"""
