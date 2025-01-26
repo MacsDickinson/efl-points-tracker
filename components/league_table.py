@@ -17,7 +17,7 @@ def format_form(form_string):
     form_html = ""
     for result in form_string:
         color = colors.get(result, '#808080')
-        form_html += f'<span style="display: inline-block; text-align: center; width: 32px; color: {color};">{result}</span>'
+        form_html += f'<span style="display: inline-block; text-align: center; color: {color};">{result}</span>'
 
     return form_html
 
