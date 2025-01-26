@@ -18,6 +18,20 @@ def calculate_cumulative_points(matches_df):
         all_dates = sorted(matches_df['date'].unique())
         points_data = []
 
+        # Get teams and their points deductions at the start
+        teams_deductions = {}
+        for team in set(matches_df['home_team'].unique()) | set(matches_df['away_team'].unique()):
+            # Get latest standings for the team
+            latest_standing = (
+                db.query(Standings)
+                .join(Standings.team)
+                .filter(Standings.team.has(name=team))
+                .order_by(Standings.last_updated.desc())
+                .first()
+            )
+            if latest_standing:
+                teams_deductions[team] = latest_standing.points_deduction
+
         # Process each date
         for date in all_dates:
             # Get matches up to this date
@@ -34,7 +48,7 @@ def calculate_cumulative_points(matches_df):
                 # Calculate goals and points from matches
                 cumulative_goals_for = 0
                 cumulative_goals_against = 0
-                calculated_points = 0
+                calculated_points = teams_deductions.get(team, 0)  # Start with any points deduction
 
                 for _, match in team_matches.iterrows():
                     if match['home_team'] == team:
@@ -64,7 +78,7 @@ def calculate_cumulative_points(matches_df):
                     .first()
                 )
 
-                # If we have standings data and the matches_played matches, use the official points
+                # Use official standings points if matches played match
                 points = latest_standing.points if (latest_standing and 
                     latest_standing.matches_played == matches_played) else calculated_points
 

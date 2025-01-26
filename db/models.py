@@ -61,7 +61,8 @@ class Standings(Base):
     league_id = Column(Integer, ForeignKey('leagues.id'), nullable=False)
     team_id = Column(Integer, ForeignKey('teams.id'), nullable=False)
     position = Column(Integer, nullable=False)
-    points = Column(Integer, nullable=False)  # Including any deductions
+    points = Column(Integer, nullable=False)  # Total points including deductions
+    points_deduction = Column(Integer, nullable=False, default=0)  # Store any points deductions
     matches_played = Column(Integer, nullable=False)
     goals_for = Column(Integer, nullable=False)
     goals_against = Column(Integer, nullable=False)

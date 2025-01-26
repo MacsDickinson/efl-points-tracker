@@ -142,6 +142,40 @@ def sync_standings(db: Session, league_id: int, season: int):
             if not team_id:
                 continue
 
+            # Calculate points deduction by comparing total points with expected points
+            matches_played = row['matches_played']
+            points_deduction = 0
+
+            # Get all matches for this team to calculate expected points
+            team = db.query(Team).get(team_id)
+            matches = (
+                db.query(Match)
+                .filter(
+                    (Match.home_team_id == team_id) | (Match.away_team_id == team_id),
+                    Match.status == 'FT',
+                    Match.season == season
+                )
+                .all()
+            )
+
+            expected_points = 0
+            for match in matches:
+                if match.home_team_id == team_id:
+                    if match.home_score > match.away_score:
+                        expected_points += 3
+                    elif match.home_score == match.away_score:
+                        expected_points += 1
+                else:
+                    if match.away_score > match.home_score:
+                        expected_points += 3
+                    elif match.home_score == match.away_score:
+                        expected_points += 1
+
+            # The difference between expected and actual points is the deduction
+            points_deduction = expected_points - row['points']
+            if points_deduction < 0:  # If negative, assume it's a bonus not a deduction
+                points_deduction = 0
+
             # Get existing standing or create new one
             standing = (
                 db.query(Standings)
@@ -153,6 +187,7 @@ def sync_standings(db: Session, league_id: int, season: int):
                 # Update existing standing
                 standing.position = row['position']
                 standing.points = row['points']
+                standing.points_deduction = points_deduction
                 standing.matches_played = row['matches_played']
                 standing.goals_for = row['goals_for']
                 standing.goals_against = row['goals_against']
@@ -167,6 +202,7 @@ def sync_standings(db: Session, league_id: int, season: int):
                     team_id=team_id,
                     position=row['position'],
                     points=row['points'],
+                    points_deduction=points_deduction,
                     matches_played=row['matches_played'],
                     goals_for=row['goals_for'],
                     goals_against=row['goals_against'],
