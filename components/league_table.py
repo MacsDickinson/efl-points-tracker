@@ -36,7 +36,7 @@ def create_sparkline(matches,
 
     # Calculate min and max for scaling
     min_points = 0
-    point_range = max(points[-1] if points else max_points)  # Use final points or max_points
+    point_range = max(1, max_points - min_points)  # Avoid division by zero
 
     # Create point coordinates
     x_step = width / (len(points) - 1) if len(points) > 1 else 0
@@ -52,8 +52,10 @@ def create_sparkline(matches,
     path = f"M{' L'.join(points_coords)}"
 
     # Use team colors if provided, otherwise default to white
-    primary_color = team_colors['primary'] if team_colors else "rgba(255,255,255,0.7)"
-    secondary_color = team_colors['secondary'] if team_colors else "rgba(255,255,255,0.3)"
+    primary_color = team_colors[
+        'primary'] if team_colors else "rgba(255,255,255,0.7)"
+    secondary_color = team_colors[
+        'secondary'] if team_colors else "rgba(255,255,255,0.3)"
 
     svg = f"""
     <svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" style="display: inline-block; vertical-align: middle;">
@@ -84,8 +86,8 @@ def display_league_table(team_data):
 
     # Sort teams by points (considering deductions)
     sorted_teams = sorted(team_data,
-                         key=lambda x: (x['position']),
-                         reverse=False)
+                          key=lambda x: (x['position']),
+                          reverse=False)
 
     # First, inject the CSS separately
     st.html("""
@@ -150,12 +152,15 @@ def display_league_table(team_data):
         wins = sum(1 for m in team['matches'] if m['result'] == 'win')
         draws = sum(1 for m in team['matches'] if m['result'] == 'draw')
         losses = sum(1 for m in team['matches'] if m['result'] == 'loss')
-        team_colour = team_colors.get(team['name'], {'primary': '#808080', 'secondary': '#404040'})
+        team_colour = team_colors.get(team['name'], {
+            'primary': '#808080',
+            'secondary': '#404040'
+        })
 
         form_display = format_form(team['form']) if team['form'] else ""
         sparkline = create_sparkline(team['matches'],
-                                    team_colors=team_colour,
-                                    max_points=max_points)
+                                     team_colors=team_colour,
+                                     max_points=max_points)
 
         row = f"""
         <tr>
