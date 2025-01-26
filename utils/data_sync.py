@@ -56,16 +56,18 @@ def sync_matches(league_id: int, season: int):
         new_teams = []
         for _, team_data in unique_teams.iterrows():
             if team_data['api_id'] not in existing_teams:
-                team = Team(
-                    api_id=team_data['api_id'],
-                    name=team_data['name']
-                )
-                new_teams.append(team)
-                existing_teams[team_data['api_id']] = team
-
-        if new_teams:
-            db.bulk_save_objects(new_teams)
-            db.commit()
+                try:
+                    team = Team(
+                        api_id=team_data['api_id'],
+                        name=team_data['name']
+                    )
+                    db.add(team)
+                    db.commit()
+                    existing_teams[team_data['api_id']] = team
+                except Exception as e:
+                    db.rollback()
+                    print(f"Error creating team {team_data['name']}: {str(e)}")
+                    continue
 
         # Pre-fetch existing matches
         existing_matches = {
