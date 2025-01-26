@@ -25,8 +25,15 @@ def create_sparkline(matches, width=100, height=30):
     if not matches:
         return ""
 
-    # Get cumulative points for each match
-    points = [match['cumulative_total'] for match in matches]
+    # Calculate points for each match
+    points = [0]  # Start with 0 points
+    current_points = 0
+    for match in matches:
+        if match['result'] == 'win':
+            current_points += 3
+        elif match['result'] == 'draw':
+            current_points += 1
+        points.append(current_points)
 
     # Calculate min and max for scaling
     min_points = min(points)
@@ -46,17 +53,9 @@ def create_sparkline(matches, width=100, height=30):
     # Create SVG path
     path = f"M{' L'.join(points_coords)}"
 
-    return f"""
-    <svg width="{width}" height="{height}" style="display: inline-block; vertical-align: middle;">
-        <path 
-            d="{path}" 
-            stroke="rgba(255,255,255,0.7)" 
-            stroke-width="2" 
-            fill="none" 
-            vector-effect="non-scaling-stroke"
-        />
-    </svg>
-    """
+    return f"""<svg width="{width}" height="{height}" style="display: inline-block; vertical-align: middle;">
+        <path d="{path}" stroke="rgba(255,255,255,0.7)" stroke-width="2" fill="none" vector-effect="non-scaling-stroke"/>
+    </svg>"""
 
 
 def display_league_table(team_data):
