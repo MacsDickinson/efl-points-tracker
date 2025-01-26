@@ -204,6 +204,12 @@ def main():
                                             options=all_teams,
                                             default=all_teams,
                                             key="team_filter")
+            
+            # Show reset button only when not all teams are selected
+            if len(selected_teams) < len(all_teams):
+                if st.button("Reset Filter", type="secondary"):
+                    st.session_state.team_filter = all_teams
+                    st.rerun()
 
         # Filter team data based on selection
         filtered_team_data = [
