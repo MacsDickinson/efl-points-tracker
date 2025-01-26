@@ -161,30 +161,26 @@ def main():
     """,
                 unsafe_allow_html=True)
 
-    # Create top navigation using columns
-    col1, col2, spacer, info = st.columns([2, 2, 4, 2])
-
+    # Create sidebar selectors
     leagues = get_available_leagues()
-    with col1:
-        selected_league = st.selectbox("Select League",
+    selected_league = st.sidebar.selectbox("Select League",
                                        options=list(leagues.keys()),
                                        format_func=lambda x: leagues[x],
                                        key="league_selector")
 
     seasons = get_available_seasons()
-    with col2:
-        selected_season = st.selectbox("Select Season",
+    selected_season = st.sidebar.selectbox("Select Season",
                                        options=list(seasons.keys()),
                                        format_func=lambda x: seasons[x],
                                        key="season_selector")
 
-    with info:
-        with st.expander("ℹ️ About"):
-            st.markdown("""
-            This dashboard visualizes the cumulative points 
-            progression for football teams throughout 
-            the season.
-            """)
+    # About section in sidebar
+    with st.sidebar.expander("ℹ️ About"):
+        st.markdown("""
+        This dashboard visualizes the cumulative points 
+        progression for football teams throughout 
+        the season.
+        """)
 
     # Main content
     with st.spinner("Syncing match data..."):
