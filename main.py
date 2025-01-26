@@ -176,16 +176,16 @@ def main():
     leagues = get_available_leagues()
     with col1:
         selected_league = st.selectbox("Select League",
-                                   options=list(leagues.keys()),
-                                   format_func=lambda x: leagues[x],
-                                   key="league_selector")
+                                      options=list(leagues.keys()),
+                                      format_func=lambda x: leagues[x],
+                                      key="league_selector")
 
     seasons = get_available_seasons()
     with col2:
         selected_season = st.selectbox("Select Season",
-                                   options=list(seasons.keys()),
-                                   format_func=lambda x: seasons[x],
-                                   key="season_selector")
+                                      options=list(seasons.keys()),
+                                      format_func=lambda x: seasons[x],
+                                      key="season_selector")
 
     with info:
         with st.expander("ℹ️ About"):
