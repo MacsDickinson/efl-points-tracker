@@ -8,42 +8,67 @@ from db.database import init_db
 from utils.dev_mode import log_error
 from components.league_table import display_league_table
 
-# Custom CSS for dark theme
+# Custom CSS for theme support
 st.markdown("""
     <style>
+    :root {
+        color-scheme: light dark;
+    }
+
+    /* Light mode colors */
+    :root {
+        --bg-color: rgb(255, 255, 255);
+        --text-color: rgb(49, 51, 63);
+        --secondary-bg: rgb(247, 248, 249);
+        --border-color: rgba(49, 51, 63, 0.1);
+        --hover-bg: rgba(49, 51, 63, 0.05);
+    }
+
+    /* Dark mode colors */
+    @media (prefers-color-scheme: dark) {
+        :root {
+            --bg-color: rgb(17, 17, 17);
+            --text-color: rgba(255, 255, 255, 0.9);
+            --secondary-bg: rgba(17, 17, 17, 0.9);
+            --border-color: rgba(255, 255, 255, 0.1);
+            --hover-bg: rgba(255, 255, 255, 0.05);
+        }
+    }
+
     .stApp {
-        background-color: rgb(17, 17, 17);
-        color: rgba(255, 255, 255, 0.9);
+        background-color: var(--bg-color);
+        color: var(--text-color);
     }
     .block-container {
-        max-width: 95rem !important;  /* Increased from 46rem */
+        max-width: 95rem !important;
         padding-left: 2rem !important;
         padding-right: 2rem !important;
     }
     .stSelectbox label, .stSelectbox div[role="button"] {
-        color: rgba(255, 255, 255, 0.9) !important;
+        color: var(--text-color) !important;
     }
     .stSelectbox div[role="button"] {
-        background-color: rgba(17, 17, 17, 0.9);
-        border: 1px solid rgba(255, 255, 255, 0.2);
+        background-color: var(--secondary-bg);
+        border: 1px solid var(--border-color);
     }
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     .stApp > header {display: none;}
     .main > div {padding-top: 2rem;}
     .stTabs [data-baseweb="tab-list"] {
-        background-color: rgba(17, 17, 17, 0.9);
+        background-color: var(--secondary-bg);
         padding: 1rem 1rem 0 1rem;
         border-radius: 1rem 1rem 0 0;
     }
     .stTabs [data-baseweb="tab"] {
-        color: rgba(255, 255, 255, 0.7);
+        color: var(--text-color);
+        opacity: 0.7;
     }
     .stTabs [data-baseweb="tab-highlight"] {
-        background-color: rgba(255, 255, 255, 0.2);
+        background-color: var(--hover-bg);
     }
     .stMarkdown div {
-        color: rgba(255, 255, 255, 0.9);
+        color: var(--text-color);
     }
     </style>
     """,
@@ -90,24 +115,21 @@ def main():
 
     # Main content
     with st.spinner("Loading match data..."):
-        # Get team data with matches using new structure
         team_data = get_team_data_with_matches(int(selected_league), int(selected_season))
 
-        # Convert team data to points dataframe for visualization
+        # Convert team data to points dataframe
         points_data = []
         for team in team_data:
-            # Add initial point (with deduction applied)
             points_data.append({
                 'team': team['name'],
                 'date': team['matches'][0]['date'] if team['matches'] else None,
-                'points': -team['points_deduction'],  # Start with deduction
+                'points': -team['points_deduction'],
                 'matches_played': 0,
                 'goals_for': 0,
                 'goals_against': 0,
                 'goal_difference': 0
             })
 
-            # Add points progression for each match
             for match in team['matches']:
                 points_data.append({
                     'team': team['name'],
