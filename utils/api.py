@@ -136,17 +136,12 @@ def get_available_leagues():
     return {
         "39": "Premier League",
         "40": "Championship",
-        "41": "League One",
-        "42": "League Two",
+        "61": "Ligue 1",
+        "71": "Serie A",
+        "78": "Bundesliga"
     }
 
 
 def get_available_seasons():
     """Return available seasons for selection"""
-    return {
-        "2024": "24/25",
-        "2023": "23/24",
-        "2022": "22/23",
-        "2021": "21/22",
-        "2020": "20/21",
-    }
+    return {"2024": "24/25", "2023": "23/24", "2022": "22/23"}

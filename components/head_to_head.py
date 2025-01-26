@@ -29,23 +29,38 @@ def display_head_to_head(team_data):
     team2_data = next((team for team in team_data if team['name'] == team2), None)
 
     if team1_data and team2_data:
-        # Create metrics comparison
-        col1, col2, col3 = st.columns(3)
+        # Create metrics comparison side by side
+        col1, col2 = st.columns(2)
 
         with col1:
+            st.subheader(team1)
             st.metric(label="Points", 
                      value=team1_data['total_points'],
-                     delta=team1_data['total_points'] - team2_data['total_points'])
-
-        with col2:
+                     delta=team1_data['total_points'] - team2_data['total_points'],
+                     delta_color="normal")
             st.metric(label="Goal Difference",
                      value=team1_data['goal_difference'],
-                     delta=team1_data['goal_difference'] - team2_data['goal_difference'])
-
-        with col3:
+                     delta=team1_data['goal_difference'] - team2_data['goal_difference'],
+                     delta_color="normal")
             st.metric(label="Position",
                      value=team1_data['position'],
-                     delta=team2_data['position'] - team1_data['position'])
+                     delta=team2_data['position'] - team1_data['position'],
+                     delta_color="normal")
+
+        with col2:
+            st.subheader(team2)
+            st.metric(label="Points", 
+                     value=team2_data['total_points'],
+                     delta=team2_data['total_points'] - team1_data['total_points'],
+                     delta_color="normal")
+            st.metric(label="Goal Difference",
+                     value=team2_data['goal_difference'],
+                     delta=team2_data['goal_difference'] - team1_data['goal_difference'],
+                     delta_color="normal")
+            st.metric(label="Position",
+                     value=team2_data['position'],
+                     delta=team1_data['position'] - team2_data['position'],
+                     delta_color="normal")
 
         # Find head-to-head matches
         h2h_matches = []
