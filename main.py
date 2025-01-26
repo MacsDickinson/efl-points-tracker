@@ -14,6 +14,9 @@ st.markdown("""
     .stApp {
         background-color: rgb(17, 17, 17);
         color: rgba(255, 255, 255, 0.9);
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 1rem;
     }
     .stSelectbox label, .stSelectbox div[role="button"] {
         color: rgba(255, 255, 255, 0.9) !important;
@@ -64,16 +67,16 @@ def main():
     leagues = get_available_leagues()
     with col1:
         selected_league = st.selectbox("Select League",
-                                      options=list(leagues.keys()),
-                                      format_func=lambda x: leagues[x],
-                                      key="league_selector")
+                                     options=list(leagues.keys()),
+                                     format_func=lambda x: leagues[x],
+                                     key="league_selector")
 
     seasons = get_available_seasons()
     with col2:
         selected_season = st.selectbox("Select Season",
-                                      options=list(seasons.keys()),
-                                      format_func=lambda x: seasons[x],
-                                      key="season_selector")
+                                     options=list(seasons.keys()),
+                                     format_func=lambda x: seasons[x],
+                                     key="season_selector")
 
     with info:
         with st.expander("ℹ️ About"):

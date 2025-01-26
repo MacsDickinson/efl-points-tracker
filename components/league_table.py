@@ -14,7 +14,7 @@ def format_form(form_string):
     form_html = ""
     for result in form_string:
         color = colors.get(result, '#808080')
-        form_html += f'<span style="display: inline-block; text-align: center; width: 24px; color: {color};">{result}</span>'
+        form_html += f'<span style="display: inline-block; text-align: center; width: 32px; color: {color};">{result}</span>'
 
     return form_html
 
@@ -42,11 +42,12 @@ def display_league_table(team_data):
             font-family: monospace;
             font-size: 14px;
             width: 100%;
-            border-collapse: collapse;
+            border-collapse: separate;
+            border-spacing: 0;
             background-color: rgb(17, 17, 17);
         }
         .league-table th, .league-table td {
-            padding: 8px;
+            padding: 12px 16px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
         .league-table th {
@@ -54,16 +55,17 @@ def display_league_table(team_data):
             font-weight: bold;
             color: rgba(255, 255, 255, 0.9);
             text-align: center;
+            white-space: nowrap;
         }
         .league-table tr:hover {
             background-color: rgba(255, 255, 255, 0.05);
         }
-        .pos-cell { width: 40px; text-align: center; }
-        .team-cell { width: 200px; text-align: left; padding-left: 16px; }
-        .num-cell { width: 60px; text-align: center; }
-        .goals-cell { width: 80px; text-align: center; }
-        .form-cell { width: 160px; text-align: center; letter-spacing: 4px; }
-        .points-cell { width: 60px; text-align: center; font-weight: bold; }
+        .pos-cell { width: 50px; text-align: center; }
+        .team-cell { width: 250px; text-align: left; padding-left: 24px; }
+        .num-cell { width: 70px; text-align: center; }
+        .goals-cell { width: 100px; text-align: center; }
+        .form-cell { width: 200px; text-align: center; letter-spacing: 6px; }
+        .points-cell { width: 70px; text-align: center; font-weight: bold; }
         </style>
         <table class="league-table">
         <tr>
