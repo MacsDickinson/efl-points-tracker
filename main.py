@@ -54,6 +54,45 @@ st.markdown("""
         background-color: var(--secondary-bg);
         border: 1px solid var(--border-color);
     }
+
+    /* Sidebar styling */
+    [data-testid="stSidebar"] {
+        background-color: var(--bg-color);
+        border-right: 1px solid var(--border-color);
+    }
+
+    /* Multiselect styling */
+    .stMultiSelect {
+        background: var(--bg-color);
+    }
+    .stMultiSelect label {
+        color: var(--text-color) !important;
+        font-weight: 600;
+    }
+    .stMultiSelect [data-baseweb="select"] {
+        background: linear-gradient(135deg, #C6EA8D 0%, #FE90AF 100%);
+        padding: 2px;
+        border-radius: 4px;
+    }
+    .stMultiSelect [data-baseweb="select"] > div {
+        background: var(--bg-color);
+        border: none !important;
+        border-radius: 2px;
+    }
+    .stMultiSelect [data-baseweb="tag"] {
+        background: linear-gradient(135deg, #C6EA8D 0%, #FE90AF 100%);
+        color: var(--bg-color);
+    }
+    .stMultiSelect [data-baseweb="tag"]:hover {
+        background: linear-gradient(135deg, #b5d980 0%, #e57c99 100%);
+    }
+
+    /* Filter icon styling */
+    .filter-icon {
+        vertical-align: middle;
+        margin-right: 8px;
+    }
+
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     .stApp > header {display: none;}
@@ -74,8 +113,7 @@ st.markdown("""
         color: var(--text-color);
     }
     </style>
-""",
-    unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
 # Initialize database with error handling
 try:
@@ -87,7 +125,6 @@ except Exception as e:
     error_msg = log_error("Failed to initialize database", e)
     st.error(error_msg)
     st.stop()
-
 
 def main():
     # Create and embed the header image
@@ -110,8 +147,7 @@ def main():
             </g>
         </svg>
     </div>
-    """,
-                unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
 
     # Create top navigation using columns
     col1, col2, spacer, info = st.columns([2, 2, 4, 2])
@@ -143,17 +179,24 @@ def main():
         team_data = get_team_data_with_matches(int(selected_league),
                                               int(selected_season))
 
-        # Get all team names for filtering
-        all_teams = [team['name'] for team in team_data]
+        # Get all team names for filtering and sort alphabetically
+        all_teams = sorted([team['name'] for team in team_data])
 
-        # Add team filter in sidebar
-        st.sidebar.markdown("### Team Filter")
-        selected_teams = st.sidebar.multiselect(
-            "Select teams to display",
-            options=all_teams,
-            default=all_teams,
-            key="team_filter"
-        )
+        # Add collapsible filter section in sidebar with icon
+        st.sidebar.markdown("""
+        <svg class="filter-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M4.25 5.66C4.35 5.79 9.99 12.99 9.99 12.99V19C9.99 19.55 10.44 20 11 20H13.01C13.56 20 14.02 19.55 14.02 19V12.98C14.02 12.98 19.51 5.96 19.77 5.64C20.03 5.32 20 5 20 5C20 4.45 19.55 4 18.99 4H5.01C4.4 4 4 4.48 4 5C4 5.2 4.06 5.44 4.25 5.66Z" fill="currentColor"/>
+        </svg>
+        Team Filter
+        """, unsafe_allow_html=True)
+
+        with st.sidebar.expander("", expanded=False):
+            selected_teams = st.multiselect(
+                "Select teams to display",
+                options=all_teams,
+                default=all_teams,
+                key="team_filter"
+            )
 
         # Filter team data based on selection
         filtered_team_data = [team for team in team_data if team['name'] in selected_teams]
