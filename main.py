@@ -7,6 +7,7 @@ from components.graph import plot_cumulative_points, display_team_stats
 from db.database import init_db
 from utils.dev_mode import log_error
 from components.league_table import display_league_table
+from components.head_to_head import display_head_to_head
 
 # Custom CSS for system theme support
 st.markdown("""
@@ -114,7 +115,7 @@ st.markdown("""
     }
     </style>
 """,
-            unsafe_allow_html=True)
+    unsafe_allow_html=True)
 
 # Initialize database with error handling
 try:
@@ -237,7 +238,7 @@ def main():
 
         points_df = pd.DataFrame(points_data)
 
-        tab1, tab2 = st.tabs(["📈 Points Progression", "📊 League Table"])
+        tab1, tab2, tab3 = st.tabs(["📈 Points Progression", "📊 League Table", "🤝 Head-to-Head"])
 
         with tab1:
             fig = plot_cumulative_points(points_df)
@@ -253,6 +254,9 @@ def main():
 
         with tab2:
             display_league_table(filtered_team_data)
+
+        with tab3:
+            display_head_to_head(filtered_team_data)
 
 
 if __name__ == "__main__":
