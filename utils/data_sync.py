@@ -1,6 +1,7 @@
 import pandas as pd
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 from db.models import League, Team, Match, Standings
 from db.database import get_db
 from utils.football_api import fetch_matches_from_api, fetch_standings_from_api
@@ -36,11 +37,35 @@ def sync_matches(league_id: int, season: int):
             db.add(league)
             db.commit()
 
-        # Pre-fetch existing teams for this league
+        # Get all unique teams from the API data
+        unique_teams = pd.concat([
+            api_matches[['home_team', 'home_team_id']].rename(
+                columns={'home_team': 'name', 'home_team_id': 'api_id'}),
+            api_matches[['away_team', 'away_team_id']].rename(
+                columns={'away_team': 'name', 'away_team_id': 'api_id'})
+        ]).drop_duplicates(subset=['api_id'])
+
+        # Process all teams at once
+        all_api_ids = unique_teams['api_id'].tolist()
         existing_teams = {
-            (t.api_id, t.league_id): t
-            for t in db.query(Team).filter_by(league_id=league.id).all()
+            t.api_id: t
+            for t in db.query(Team).filter(Team.api_id.in_(all_api_ids)).all()
         }
+
+        # Create any missing teams
+        new_teams = []
+        for _, team_data in unique_teams.iterrows():
+            if team_data['api_id'] not in existing_teams:
+                team = Team(
+                    api_id=team_data['api_id'],
+                    name=team_data['name']
+                )
+                new_teams.append(team)
+                existing_teams[team_data['api_id']] = team
+
+        if new_teams:
+            db.bulk_save_objects(new_teams)
+            db.commit()
 
         # Pre-fetch existing matches
         existing_matches = {
@@ -54,7 +79,7 @@ def sync_matches(league_id: int, season: int):
         updated_matches_count = 0
         processed_matches = 0
 
-        # Process matches in smaller batches for better control
+        # Process matches in batches
         batch_size = 50
         total_batches = (len(api_matches) + batch_size - 1) // batch_size
 
@@ -64,10 +89,10 @@ def sync_matches(league_id: int, season: int):
             batch = api_matches.iloc[start_idx:end_idx]
 
             print(f"Processing batch {batch_idx + 1}/{total_batches} (matches {start_idx + 1}-{end_idx})")
+            new_matches = []
 
             for _, row in batch.iterrows():
                 try:
-                    # Update progress
                     processed_matches += 1
                     progress = processed_matches / total_matches
                     progress_bar.progress(
@@ -75,36 +100,24 @@ def sync_matches(league_id: int, season: int):
                         text=f"{progress_text} ({processed_matches}/{total_matches})"
                     )
 
-                    # Get or create teams efficiently
-                    home_team = get_or_create_team(db, row['home_team'],
-                                                 row['home_team_id'],
-                                                 league.id,
-                                                 existing_teams)
-                    away_team = get_or_create_team(db, row['away_team'],
-                                                 row['away_team_id'],
-                                                 league.id,
-                                                 existing_teams)
-
-                    # Check if match exists
+                    home_team = existing_teams[row['home_team_id']]
+                    away_team = existing_teams[row['away_team_id']]
                     match_key = (season, league.id, home_team.id, away_team.id)
                     match = existing_matches.get(match_key)
 
-                    # Convert scores
                     home_score = int(row['home_score']) if pd.notna(
                         row['home_score']) else None
                     away_score = int(row['away_score']) if pd.notna(
                         row['away_score']) else None
 
                     if match:
-                        # Update only if scores changed
                         if match.home_score != home_score or match.away_score != away_score:
                             match.home_score = home_score
                             match.away_score = away_score
                             match.status = row['status']
                             updated_matches_count += 1
                     else:
-                        # Create new match
-                        match = Match(
+                        new_match = Match(
                             api_id=row['fixture_id'],
                             date=pd.to_datetime(row['date']).date(),
                             season=season,
@@ -115,19 +128,19 @@ def sync_matches(league_id: int, season: int):
                             away_score=away_score,
                             status=row['status']
                         )
-                        db.add(match)
-                        existing_matches[match_key] = match
+                        new_matches.append(new_match)
+                        existing_matches[match_key] = new_match
                         new_matches_count += 1
 
                 except Exception as e:
-                    if is_dev_mode():
-                        log_error(f"Error processing match: {row['fixture_id']}", e)
                     print(f"Error processing match {row['fixture_id']}: {str(e)}")
                     continue
 
-            # Commit after each batch
+            if new_matches:
+                db.bulk_save_objects(new_matches)
             db.commit()
-            print(f"Batch {batch_idx + 1} complete: {new_matches_count} new, {updated_matches_count} updated")
+
+            print(f"Batch {batch_idx + 1} complete: {len(new_matches)} new, {updated_matches_count} updated")
 
         print(f"\nSync complete:")
         print(f"- Processed {processed_matches}/{total_matches} matches")
@@ -271,7 +284,6 @@ def get_or_create_team(db: Session,
             if existing_teams is not None:
                 existing_teams[(team_api_id, league_id)] = team
     return team
-
 
 def needs_refresh(league_id: int, season: int) -> bool:
     """

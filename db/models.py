@@ -11,7 +11,6 @@ class League(Base):
     id = Column(Integer, primary_key=True)
     api_id = Column(Integer, unique=True, nullable=False)
     name = Column(String, nullable=False)
-    teams = relationship("Team", back_populates="league")
     matches = relationship("Match", back_populates="league")
     standings = relationship("Standings", back_populates="league")
 
@@ -19,17 +18,11 @@ class Team(Base):
     __tablename__ = 'teams'
 
     id = Column(Integer, primary_key=True)
-    api_id = Column(Integer, nullable=False)
+    api_id = Column(Integer, unique=True, nullable=False)  # Now api_id is unique across all leagues
     name = Column(String, nullable=False)
-    league_id = Column(Integer, ForeignKey('leagues.id'), nullable=False)
-    league = relationship("League", back_populates="teams")
     home_matches = relationship("Match", back_populates="home_team", foreign_keys="Match.home_team_id")
     away_matches = relationship("Match", back_populates="away_team", foreign_keys="Match.away_team_id")
     standings = relationship("Standings", back_populates="team")
-
-    __table_args__ = (
-        UniqueConstraint('api_id', 'league_id', name='uix_team_api_league'),
-    )
 
 class Match(Base):
     __tablename__ = 'matches'
