@@ -41,7 +41,7 @@ def calculate_cumulative_points(matches_df):
             points_data.append({
                 'team': team,
                 'date': matches_df['date'].min(),
-                'points': -points_deduction,  # Negative because deductions reduce points
+                'points': -points_deduction,  # Start with negative deduction
                 'matches_played': 0,
                 'goals_for': 0,
                 'goals_against': 0,
@@ -49,7 +49,7 @@ def calculate_cumulative_points(matches_df):
             })
 
             # Process matches for this team
-            current_points = -points_deduction  # Start with deduction
+            current_points = -points_deduction  # Start with points deduction
             goals_for = 0
             goals_against = 0
             matches_count = 0
@@ -81,11 +81,11 @@ def calculate_cumulative_points(matches_df):
                 elif match_goals_for == match_goals_against:
                     current_points += 1
 
-                # Record the state after this match
+                # Record the state after this match, keeping points deduction throughout
                 points_data.append({
                     'team': team,
                     'date': match['date'],
-                    'points': current_points,
+                    'points': current_points,  # Points already include deduction from start
                     'matches_played': matches_count,
                     'goals_for': goals_for,
                     'goals_against': goals_against,
