@@ -1,6 +1,7 @@
 import pandas as pd
 from db.database import get_db
-from db.models import Standings
+from db.models import Standings, Team
+from sqlalchemy import or_
 
 def calculate_cumulative_points(matches_df):
     """Calculate cumulative points and goal statistics for each team over time"""
@@ -14,106 +15,72 @@ def calculate_cumulative_points(matches_df):
     db = next(get_db())
 
     try:
-        # Get teams and their points deductions at the start
-        teams_deductions = {}
-        points_data = []
-
-        # Get all unique teams
+        # Get all unique teams and their latest standings in a single query
         all_teams = set(matches_df['home_team'].unique()) | set(matches_df['away_team'].unique())
 
-        # Get initial points deductions for each team
+        # Fetch all standings for all teams in one query
+        team_standings = {}
+        standings_query = (
+            db.query(Standings)
+            .join(Team)
+            .filter(or_(*[Team.name == name for name in all_teams]))
+            .all()
+        )
+
+        for standing in standings_query:
+            team_standings[standing.team.name] = standing
+
+        points_data = []
+
+        # Initialize points data with deductions
         for team in all_teams:
-            # Get latest standings for the team
-            latest_standing = (
-                db.query(Standings)
-                .join(Standings.team)
-                .filter(Standings.team.has(name=team))
-                .order_by(Standings.last_updated.desc())
-                .first()
-            )
-            deduction = latest_standing.points_deduction if latest_standing else 0
-            teams_deductions[team] = deduction
+            standing = team_standings.get(team)
+            deduction = standing.points_deduction if standing else 0
 
             # Add initial point (with deduction) for gameweek 0
             points_data.append({
                 'team': team,
-                'date': matches_df['date'].min(),  # First date in dataset
-                'points': -abs(deduction),  # Start with negative points if there's a deduction
+                'date': matches_df['date'].min(),
+                'points': -abs(deduction),
                 'matches_played': 0,
                 'goals_for': 0,
                 'goals_against': 0,
                 'goal_difference': 0,
-                'form': latest_standing.form if latest_standing else None
+                'form': standing.form if standing else None
             })
 
-        # Get all dates where we have matches
-        all_dates = sorted(matches_df['date'].unique())
+            # Process each team's matches
+            team_matches = matches_df[
+                (matches_df['home_team'] == team) | 
+                (matches_df['away_team'] == team)
+            ].sort_values('date')
 
-        # Process each date
-        for date in all_dates:
-            # Get matches up to this date
-            matches_to_date = matches_df[matches_df['date'] <= date]
+            cumulative_points = -abs(deduction)
+            cumulative_goals_for = 0
+            cumulative_goals_against = 0
 
-            for team in all_teams:
-                # Get all matches involving this team up to this date
-                team_matches = matches_to_date[
-                    (matches_to_date['home_team'] == team) | 
-                    (matches_to_date['away_team'] == team)
-                ].sort_values('date')
+            for _, match in team_matches.iterrows():
+                is_home = match['home_team'] == team
+                team_goals = match['home_score'] if is_home else match['away_score']
+                opponent_goals = match['away_score'] if is_home else match['home_score']
 
-                matches_played = len(team_matches)
+                if team_goals > opponent_goals:
+                    cumulative_points += 3
+                elif team_goals == opponent_goals:
+                    cumulative_points += 1
 
-                if matches_played == 0:
-                    continue  # Skip if no matches played (already handled in initial points)
-
-                # Calculate goals and points from matches
-                cumulative_goals_for = 0
-                cumulative_goals_against = 0
-                calculated_points = -abs(teams_deductions.get(team, 0))  # Start with deduction
-
-                for _, match in team_matches.iterrows():
-                    if match['home_team'] == team:
-                        team_goals = match['home_score']
-                        opponent_goals = match['away_score']
-                        if team_goals > opponent_goals:
-                            calculated_points += 3
-                        elif team_goals == opponent_goals:
-                            calculated_points += 1
-                    else:  # team is away
-                        team_goals = match['away_score']
-                        opponent_goals = match['home_score']
-                        if team_goals > opponent_goals:
-                            calculated_points += 3
-                        elif team_goals == opponent_goals:
-                            calculated_points += 1
-
-                    cumulative_goals_for += team_goals
-                    cumulative_goals_against += opponent_goals
-
-                goal_difference = cumulative_goals_for - cumulative_goals_against
-
-                # Get the latest standings for this team
-                latest_standing = (
-                    db.query(Standings)
-                    .join(Standings.team)
-                    .filter(Standings.team.has(name=team))
-                    .order_by(Standings.last_updated.desc())
-                    .first()
-                )
-
-                # Use official standings points if matches played match
-                points = latest_standing.points if (latest_standing and 
-                    latest_standing.matches_played == matches_played) else calculated_points
+                cumulative_goals_for += team_goals
+                cumulative_goals_against += opponent_goals
 
                 points_data.append({
                     'team': team,
-                    'date': date,
-                    'points': points,
-                    'matches_played': matches_played,
+                    'date': match['date'],
+                    'points': cumulative_points,
+                    'matches_played': len(points_data) - 1,  # -1 for initial point
                     'goals_for': cumulative_goals_for,
                     'goals_against': cumulative_goals_against,
-                    'goal_difference': goal_difference,
-                    'form': latest_standing.form if latest_standing else None
+                    'goal_difference': cumulative_goals_for - cumulative_goals_against,
+                    'form': standing.form if standing else None
                 })
 
         return pd.DataFrame(points_data)

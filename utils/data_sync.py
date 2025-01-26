@@ -261,6 +261,7 @@ def needs_refresh(league_id: int, season: int) -> bool:
     Returns True if:
     - No data exists
     - There are unfinished matches in the past that need updating
+    - Next match is within 24 hours
     """
     season = int(season)
     db = next(get_db())
@@ -271,28 +272,27 @@ def needs_refresh(league_id: int, season: int) -> bool:
             return True
 
         # Get latest match in database
-        latest_match = (db.query(Match)
-            .filter_by(league_id=league.id, season=season)
-            .order_by(Match.date.desc())
-            .first())
+        latest_match = (db.query(Match).filter_by(
+            league_id=league.id,
+            season=season).order_by(Match.date.desc()).first())
 
         if not latest_match:
-            print(f"No match data for latest_match in league {league_id} and season {season}")
+            print(f"No match data in league {league_id} and season {season}")
             return True
 
         # Check for unfinished matches in the past
-        unfinished_past_matches = (db.query(Match)
-            .filter(
-                Match.league_id == league.id, 
-                Match.season == season,
-                Match.date < datetime.now().date(),
-                Match.status != 'FT'
-            ).count())
+        unfinished_past_matches = (db.query(Match).filter(
+            Match.league_id == league.id, Match.season == season, Match.date
+            < datetime.now().date(), Match.status != 'FT').count())
 
         if unfinished_past_matches > 0:
-            print(f"Unfinished matches in the past for league {league_id} and season {season}")
+            print(
+                f"Unfinished matches in the past for league {league_id} and season {season}"
+            )
             return True
 
+        print("No data sync required")
+        
         return False
 
     finally:

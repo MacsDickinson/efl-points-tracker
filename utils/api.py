@@ -8,6 +8,7 @@ from utils.data_sync import sync_matches, needs_refresh
 from utils.football_api import fetch_matches_from_api
 from utils.dev_mode import is_dev_mode
 
+
 @st.cache_data(ttl=3600)  # Cache for 1 hour by default
 def get_league_matches(league_id, season):
     """
@@ -26,12 +27,9 @@ def get_league_matches(league_id, season):
             return pd.DataFrame()
 
         # Get matches from database
-        matches = (
-            db.query(Match)
-            .filter_by(league_id=league.id, season=int(season))
-            .order_by(Match.date)
-            .all()
-        )
+        matches = (db.query(Match).filter_by(league_id=league.id,
+                                             season=int(season)).order_by(
+                                                 Match.date).all())
 
         # Convert to DataFrame
         matches_data = []
@@ -50,6 +48,7 @@ def get_league_matches(league_id, season):
     finally:
         db.close()
 
+
 @st.cache_data(ttl=3600)
 def get_available_leagues():
     """Return available leagues for selection"""
@@ -60,10 +59,11 @@ def get_available_leagues():
         "42": "League Two",
     }
 
+
 def get_available_seasons():
     """Return available seasons for selection"""
     return {
-        "2024": "23/24",
+        "2024": "24/25",
         "2023": "23/24",
         "2022": "22/23",
         "2021": "21/22",
