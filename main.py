@@ -7,6 +7,10 @@ from utils.dev_mode import log_error
 from components.league_table import display_league_table
 from components.head_to_head import display_head_to_head
 
+st.set_page_config(page_title="⚽️ Footy Stats",
+                   page_icon="sports_soccer",
+                   initial_sidebar_state="collapsed")
+
 # Custom CSS for system theme support
 st.markdown("""
     <style>
@@ -121,6 +125,17 @@ st.markdown("""
     .stMetric > label, .stMetric > .egzej5g3 {
         color: var(--text-color) !important;
     }
+    .st-emotion-cache-qsoh6x {
+        fill: url(#headerGradient)
+    }
+    .st-emotion-cache-xp32gg {
+        -webkit-box-shadow:0px 0px 15px 3px rgba(255,196,113,0.6);
+        -moz-box-shadow: 0px 0px 15px 3px rgba(255,196,113,0.6);
+        box-shadow: 0px 0px 15px 3px rgba(255,196,113,0.6);
+    }
+    .st-emotion-cache-asde8h {
+        display: inline;
+    }
     </style>
 """,
             unsafe_allow_html=True)
@@ -164,23 +179,15 @@ def main():
     # Create sidebar selectors
     leagues = get_available_leagues()
     selected_league = st.sidebar.selectbox("Select League",
-                                       options=list(leagues.keys()),
-                                       format_func=lambda x: leagues[x],
-                                       key="league_selector")
+                                           options=list(leagues.keys()),
+                                           format_func=lambda x: leagues[x],
+                                           key="league_selector")
 
     seasons = get_available_seasons()
     selected_season = st.sidebar.selectbox("Select Season",
-                                       options=list(seasons.keys()),
-                                       format_func=lambda x: seasons[x],
-                                       key="season_selector")
-
-    # About section in sidebar
-    with st.sidebar.expander("ℹ️ About"):
-        st.markdown("""
-        This dashboard visualizes the cumulative points 
-        progression for football teams throughout 
-        the season.
-        """)
+                                           options=list(seasons.keys()),
+                                           format_func=lambda x: seasons[x],
+                                           key="season_selector")
 
     # Main content
     with st.spinner("Syncing match data..."):
@@ -190,26 +197,13 @@ def main():
         # Get all team names for filtering and sort alphabetically
         all_teams = sorted([team['name'] for team in team_data])
 
-        # Add collapsible filter section in sidebar with icon
-        st.sidebar.markdown("""
-        <svg class="filter-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M4.25 5.66C4.35 5.79 9.99 12.99 9.99 12.99V19C9.99 19.55 10.44 20 11 20H13.01C13.56 20 14.02 19.55 14.02 19V12.98C14.02 12.98 19.51 5.96 19.77 5.64C20.03 5.32 20 5 20 5C20 4.45 19.55 4 18.99 4H5.01C4.4 4 4 4.48 4 5C4 5.2 4.06 5.44 4.25 5.66Z" fill="currentColor"/>
-        </svg>
-        Filter Teams
-        """,
-                            unsafe_allow_html=True)
-
-        with st.sidebar.expander("", expanded=True):
+        with st.sidebar.expander("Filter Teams",
+                                 expanded=True,
+                                 icon=":material/filter_alt:"):
             selected_teams = st.multiselect("Select teams to display",
                                             options=all_teams,
                                             default=all_teams,
                                             key="team_filter")
-            
-            # Show reset button only when not all teams are selected
-            if len(selected_teams) < len(all_teams):
-                if st.button("Reset Filter", type="secondary"):
-                    st.session_state.team_filter = all_teams
-                    st.rerun()
 
         # Filter team data based on selection
         filtered_team_data = [
