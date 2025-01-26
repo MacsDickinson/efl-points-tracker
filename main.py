@@ -8,7 +8,7 @@ from db.database import init_db
 from utils.dev_mode import log_error
 from components.league_table import display_league_table
 
-# Custom CSS for modern design
+# Custom CSS for modern design with vibrant gradients
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
@@ -25,44 +25,52 @@ st.markdown("""
             --secondary-bg: rgb(247, 248, 249);
             --border-color: rgba(20, 20, 20, 0.1);
             --hover-bg: rgba(20, 20, 20, 0.05);
-            --gradient-start: rgba(108, 99, 255, 0.1);
-            --gradient-end: rgba(255, 99, 195, 0.1);
-            --accent-color: rgb(108, 99, 255);
+            --gradient-1: rgba(255, 102, 196, 0.15);
+            --gradient-2: rgba(108, 99, 255, 0.15);
+            --gradient-3: rgba(51, 221, 255, 0.15);
+            --accent-1: rgb(255, 102, 196);
+            --accent-2: rgb(108, 99, 255);
+            --accent-3: rgb(51, 221, 255);
         }
     }
 
     /* Dark mode colors */
     @media (prefers-color-scheme: dark) {
         :root {
-            --bg-color: rgb(10, 10, 15);
+            --bg-color: rgb(8, 8, 12);
             --text-color: rgba(255, 255, 255, 0.95);
             --secondary-bg: rgba(20, 20, 30, 0.95);
             --border-color: rgba(255, 255, 255, 0.1);
             --hover-bg: rgba(255, 255, 255, 0.05);
-            --gradient-start: rgba(108, 99, 255, 0.2);
-            --gradient-end: rgba(255, 99, 195, 0.2);
-            --accent-color: rgb(138, 129, 255);
+            --gradient-1: rgba(255, 102, 196, 0.2);
+            --gradient-2: rgba(108, 99, 255, 0.2);
+            --gradient-3: rgba(51, 221, 255, 0.2);
+            --accent-1: rgb(255, 122, 216);
+            --accent-2: rgb(128, 119, 255);
+            --accent-3: rgb(71, 241, 255);
         }
     }
 
-    /* Global styles */
+    /* Global styles with enhanced gradients */
     .stApp {
-        background: linear-gradient(135deg, 
-            var(--gradient-start) 0%, 
-            var(--bg-color) 25%, 
-            var(--bg-color) 75%, 
-            var(--gradient-end) 100%);
+        background: 
+            radial-gradient(circle at 10% 90%, var(--gradient-1) 0%, transparent 40%),
+            radial-gradient(circle at 90% 10%, var(--gradient-2) 0%, transparent 40%),
+            linear-gradient(135deg, var(--gradient-3) 0%, var(--bg-color) 100%);
         font-family: 'Inter', sans-serif;
     }
 
-    /* Container styles */
+    /* Container styles with glassmorphism */
     .block-container {
         max-width: 95rem !important;
         padding: 3rem 2rem !important;
-        background: var(--bg-color);
+        background: linear-gradient(135deg, 
+            rgba(255, 255, 255, 0.05),
+            rgba(255, 255, 255, 0.01));
+        border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 24px;
         box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-        backdrop-filter: blur(8px);
+        backdrop-filter: blur(12px);
     }
 
     /* Select box styles */
@@ -73,20 +81,27 @@ st.markdown("""
     }
 
     .stSelectbox div[role="button"] {
-        background-color: var(--secondary-bg);
-        border: 1px solid var(--border-color);
+        background: linear-gradient(135deg, 
+            rgba(255, 255, 255, 0.05),
+            rgba(255, 255, 255, 0.01));
+        border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 12px;
-        padding: 0.5rem 1rem;
-        transition: all 0.2s ease;
+        padding: 0.75rem 1rem;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(12px);
     }
 
     .stSelectbox div[role="button"]:hover {
-        border-color: var(--accent-color);
+        border-color: var(--accent-2);
+        box-shadow: 0 0 20px rgba(108, 99, 255, 0.2);
     }
 
     /* Tab styles */
     .stTabs [data-baseweb="tab-list"] {
-        background-color: var(--secondary-bg);
+        background: linear-gradient(135deg, 
+            rgba(255, 255, 255, 0.05),
+            rgba(255, 255, 255, 0.01));
+        backdrop-filter: blur(12px);
         padding: 1rem 1rem 0 1rem;
         border-radius: 16px 16px 0 0;
         gap: 1rem;
@@ -97,11 +112,17 @@ st.markdown("""
         font-weight: 500;
         padding: 1rem 1.5rem;
         border-radius: 12px 12px 0 0;
+        transition: all 0.3s ease;
+    }
+
+    .stTabs [data-baseweb="tab"]:hover {
+        background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2));
+        opacity: 0.8;
     }
 
     .stTabs [data-baseweb="tab-highlight"] {
-        background-color: var(--accent-color);
-        opacity: 0.1;
+        background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+        opacity: 0.2;
     }
 
     /* Hide unnecessary elements */
@@ -114,18 +135,26 @@ st.markdown("""
         font-weight: 600;
         letter-spacing: -0.02em;
         color: var(--text-color);
+        background: linear-gradient(135deg, 
+            rgba(255, 255, 255, 0.05),
+            rgba(255, 255, 255, 0.01));
+        border-radius: 12px;
+        backdrop-filter: blur(12px);
     }
 
     /* Header container */
     .header-container {
         text-align: center;
         margin-bottom: 3rem;
-        padding: 2rem;
+        padding: 3rem;
         background: linear-gradient(135deg, 
-            var(--gradient-start), 
-            var(--gradient-end));
+            var(--gradient-1),
+            var(--gradient-2),
+            var(--gradient-3));
         border-radius: 24px;
         backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
     }
 
     </style>
@@ -138,8 +167,9 @@ def main():
         <svg width="700" height="120" viewBox="0 0 700 120">
             <defs>
                 <linearGradient id="headerGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" style="stop-color:var(--accent-color);stop-opacity:1" />
-                    <stop offset="100%" style="stop-color:var(--text-color);stop-opacity:0.8" />
+                    <stop offset="0%" style="stop-color:var(--accent-1);stop-opacity:1" />
+                    <stop offset="50%" style="stop-color:var(--accent-2);stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:var(--accent-3);stop-opacity:1" />
                 </linearGradient>
                 <filter id="glow">
                     <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
