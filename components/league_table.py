@@ -33,8 +33,8 @@ def display_league_table(team_data):
         (x['total_points'], x['goal_difference'], x['goals_for']),
         reverse=True)
 
-    # Create the table header with proper alignment and widths
-    st.markdown("""
+    # Build the complete table HTML
+    table_html = """
         <style>
         .league-table {
             font-family: monospace;
@@ -65,20 +65,22 @@ def display_league_table(team_data):
         .points-cell { width: 70px; text-align: center; font-weight: bold; }
         </style>
         <table class="league-table">
-        <tr>
-            <th class="pos-cell">#</th>
-            <th class="team-cell">Team</th>
-            <th class="num-cell">P</th>
-            <th class="num-cell">W</th>
-            <th class="num-cell">D</th>
-            <th class="num-cell">L</th>
-            <th class="num-cell">DIFF</th>
-            <th class="goals-cell">Goals</th>
-            <th class="form-cell">Last 5</th>
-            <th class="points-cell">PTS</th>
-        </tr>
-    """,
-                unsafe_allow_html=True)
+            <thead>
+                <tr>
+                    <th class="pos-cell">#</th>
+                    <th class="team-cell">Team</th>
+                    <th class="num-cell">P</th>
+                    <th class="num-cell">W</th>
+                    <th class="num-cell">D</th>
+                    <th class="num-cell">L</th>
+                    <th class="num-cell">DIFF</th>
+                    <th class="goals-cell">Goals</th>
+                    <th class="form-cell">Last 5</th>
+                    <th class="points-cell">PTS</th>
+                </tr>
+            </thead>
+            <tbody>
+    """
 
     # Add rows for each team
     for team in sorted_teams:
@@ -89,20 +91,25 @@ def display_league_table(team_data):
 
         form_display = format_form(team['form']) if team['form'] else ""
 
-        row = f"""
-        <tr>
-            <td class="pos-cell">{team['position']}</td>
-            <td class="team-cell">{team['name']}</td>
-            <td class="num-cell">{team['matches_played']}</td>
-            <td class="num-cell">{wins}</td>
-            <td class="num-cell">{draws}</td>
-            <td class="num-cell">{losses}</td>
-            <td class="num-cell">{team['goal_difference']:+d}</td>
-            <td class="goals-cell">{team['goals_for']}:{team['goals_against']}</td>
-            <td class="form-cell">{form_display}</td>
-            <td class="points-cell">{team['total_points']}</td>
-        </tr>
+        table_html += f"""
+            <tr>
+                <td class="pos-cell">{team['position']}</td>
+                <td class="team-cell">{team['name']}</td>
+                <td class="num-cell">{team['matches_played']}</td>
+                <td class="num-cell">{wins}</td>
+                <td class="num-cell">{draws}</td>
+                <td class="num-cell">{losses}</td>
+                <td class="num-cell">{team['goal_difference']:+d}</td>
+                <td class="goals-cell">{team['goals_for']}:{team['goals_against']}</td>
+                <td class="form-cell">{form_display}</td>
+                <td class="points-cell">{team['total_points']}</td>
+            </tr>
         """
-        st.markdown(row, unsafe_allow_html=True)
 
-    st.markdown("</table>", unsafe_allow_html=True)
+    table_html += """
+            </tbody>
+        </table>
+    """
+
+    # Render the complete table at once
+    st.markdown(table_html, unsafe_allow_html=True)
