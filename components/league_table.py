@@ -1,6 +1,5 @@
 import streamlit as st
 
-
 def format_form(form_string):
     """Format the form string with colored indicators"""
     if not form_string:
@@ -19,6 +18,43 @@ def format_form(form_string):
 
     return form_html
 
+def create_sparkline(matches, width=100, height=30):
+    """Create a sparkline SVG from match points progression"""
+    if not matches:
+        return ""
+
+    # Get cumulative points for each match
+    points = [match['cumulative_total'] for match in matches]
+
+    # Calculate min and max for scaling
+    min_points = min(points)
+    max_points = max(points)
+    point_range = max(1, max_points - min_points)  # Avoid division by zero
+
+    # Create point coordinates
+    x_step = width / (len(points) - 1) if len(points) > 1 else 0
+    points_coords = []
+
+    for i, point in enumerate(points):
+        x = i * x_step
+        # Scale y to fit height, inverting because SVG y=0 is top
+        y = height - ((point - min_points) / point_range * height)
+        points_coords.append(f"{x},{y}")
+
+    # Create SVG path
+    path = f"M{' L'.join(points_coords)}"
+
+    return f"""
+    <svg width="{width}" height="{height}" style="display: inline-block; vertical-align: middle;">
+        <path 
+            d="{path}" 
+            stroke="rgba(255,255,255,0.7)" 
+            stroke-width="2" 
+            fill="none" 
+            vector-effect="non-scaling-stroke"
+        />
+    </svg>
+    """
 
 def display_league_table(team_data):
     """Display league table with all statistics"""
@@ -63,8 +99,9 @@ def display_league_table(team_data):
     .goals-cell { width: 100px; text-align: center; }
     .form-cell { width: 200px; text-align: center; letter-spacing: 6px; }
     .points-cell { width: 70px; text-align: center; font-weight: bold; }
+    .trend-cell { width: 120px; text-align: center; }
     </style>
-    """, unsafe_allow_html=True)
+    """)
 
     # Then build and inject the table HTML separately
     table_rows = []
@@ -82,6 +119,7 @@ def display_league_table(team_data):
             <th class="goals-cell">Goals</th>
             <th class="form-cell">Last 5</th>
             <th class="points-cell">PTS</th>
+            <th class="trend-cell">Trend</th>
         </tr>
     """
     table_rows.append(header_row)
@@ -93,6 +131,7 @@ def display_league_table(team_data):
         losses = sum(1 for m in team['matches'] if m['result'] == 'loss')
 
         form_display = format_form(team['form']) if team['form'] else ""
+        sparkline = create_sparkline(team['matches'])
 
         row = f"""
         <tr>
@@ -106,6 +145,7 @@ def display_league_table(team_data):
             <td class="goals-cell">{team['goals_for']}:{team['goals_against']}</td>
             <td class="form-cell">{form_display}</td>
             <td class="points-cell">{team['total_points']}</td>
+            <td class="trend-cell">{sparkline}</td>
         </tr>
         """
         table_rows.append(row)
