@@ -42,8 +42,7 @@ def display_league_table(team_data):
             font-family: monospace;
             font-size: 14px;
             width: 100%;
-            border-collapse: separate;
-            border-spacing: 0;
+            border-collapse: collapse;
             background-color: rgb(17, 17, 17);
         }
         .league-table th, .league-table td {
@@ -51,7 +50,7 @@ def display_league_table(team_data):
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
         .league-table th {
-            background-color: rgba(255, 255, 255, 0.05);
+            background-color: rgba(17, 17, 17, 0.9);
             font-weight: bold;
             color: rgba(255, 255, 255, 0.9);
             text-align: center;
@@ -60,12 +59,12 @@ def display_league_table(team_data):
         .league-table tr:hover {
             background-color: rgba(255, 255, 255, 0.05);
         }
-        .pos-cell { width: 50px; text-align: center; }
-        .team-cell { width: 250px; text-align: left; padding-left: 24px; }
-        .num-cell { width: 70px; text-align: center; }
-        .goals-cell { width: 100px; text-align: center; }
-        .form-cell { width: 200px; text-align: center; letter-spacing: 6px; }
-        .points-cell { width: 70px; text-align: center; font-weight: bold; }
+        .league-table .pos-cell { width: 50px; text-align: center; }
+        .league-table .team-cell { width: 250px; text-align: left; padding-left: 24px; }
+        .league-table .num-cell { width: 70px; text-align: center; }
+        .league-table .goals-cell { width: 100px; text-align: center; }
+        .league-table .form-cell { width: 200px; text-align: center; letter-spacing: 6px; }
+        .league-table .points-cell { width: 70px; text-align: center; font-weight: bold; }
         </style>
         <table class="league-table">
         <tr>

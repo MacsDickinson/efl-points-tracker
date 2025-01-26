@@ -14,9 +14,6 @@ st.markdown("""
     .stApp {
         background-color: rgb(17, 17, 17);
         color: rgba(255, 255, 255, 0.9);
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 0 1rem;
     }
     .stSelectbox label, .stSelectbox div[role="button"] {
         color: rgba(255, 255, 255, 0.9) !important;
