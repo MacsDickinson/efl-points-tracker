@@ -70,7 +70,7 @@ st.markdown("""
         font-weight: 600;
     }
     .stMultiSelect [data-baseweb="select"] {
-        background: linear-gradient(135deg, #C6EA8D 0%, #FE90AF 100%);
+        background: linear-gradient(135deg, #FF5F6D 0%, #FE90AF 100%);
         padding: 2px;
         border-radius: 4px;
     }
@@ -80,7 +80,7 @@ st.markdown("""
         border-radius: 2px;
     }
     .stMultiSelect [data-baseweb="tag"] {
-        background: linear-gradient(135deg, #C6EA8D 0%, #FE90AF 100%);
+        background: linear-gradient(135deg, #FF5F6D 0%, #FE90AF 100%);
         color: var(--bg-color);
     }
     .stMultiSelect [data-baseweb="tag"]:hover {
@@ -113,7 +113,8 @@ st.markdown("""
         color: var(--text-color);
     }
     </style>
-""", unsafe_allow_html=True)
+""",
+            unsafe_allow_html=True)
 
 # Initialize database with error handling
 try:
@@ -126,6 +127,7 @@ except Exception as e:
     st.error(error_msg)
     st.stop()
 
+
 def main():
     # Create and embed the header image
     st.markdown("""
@@ -133,9 +135,9 @@ def main():
         <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
         <svg width="600" height="100" viewBox="0 0 600 100">
             <defs>
-                <linearGradient id="headerGradient" x1="0%" y1="0%" x2="100%" y2="50%">
-                    <stop offset="0%" style="stop-color:#C6EA8D;stop-opacity:1" />
-                    <stop offset="100%" style="stop-color:#FE90AF;stop-opacity:0.7" />
+                <linearGradient id="headerGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" style="stop-color:#FF5F6D;stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:#FFC371;stop-opacity:1" />
                 </linearGradient>
             </defs>
             <g>
@@ -147,7 +149,8 @@ def main():
             </g>
         </svg>
     </div>
-    """, unsafe_allow_html=True)
+    """,
+                unsafe_allow_html=True)
 
     # Create top navigation using columns
     col1, col2, spacer, info = st.columns([2, 2, 4, 2])
@@ -155,16 +158,16 @@ def main():
     leagues = get_available_leagues()
     with col1:
         selected_league = st.selectbox("Select League",
-                                      options=list(leagues.keys()),
-                                      format_func=lambda x: leagues[x],
-                                      key="league_selector")
+                                       options=list(leagues.keys()),
+                                       format_func=lambda x: leagues[x],
+                                       key="league_selector")
 
     seasons = get_available_seasons()
     with col2:
         selected_season = st.selectbox("Select Season",
-                                      options=list(seasons.keys()),
-                                      format_func=lambda x: seasons[x],
-                                      key="season_selector")
+                                       options=list(seasons.keys()),
+                                       format_func=lambda x: seasons[x],
+                                       key="season_selector")
 
     with info:
         with st.expander("ℹ️ About"):
@@ -177,7 +180,7 @@ def main():
     # Main content
     with st.spinner("Loading match data..."):
         team_data = get_team_data_with_matches(int(selected_league),
-                                              int(selected_season))
+                                               int(selected_season))
 
         # Get all team names for filtering and sort alphabetically
         all_teams = sorted([team['name'] for team in team_data])
@@ -187,30 +190,38 @@ def main():
         <svg class="filter-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M4.25 5.66C4.35 5.79 9.99 12.99 9.99 12.99V19C9.99 19.55 10.44 20 11 20H13.01C13.56 20 14.02 19.55 14.02 19V12.98C14.02 12.98 19.51 5.96 19.77 5.64C20.03 5.32 20 5 20 5C20 4.45 19.55 4 18.99 4H5.01C4.4 4 4 4.48 4 5C4 5.2 4.06 5.44 4.25 5.66Z" fill="currentColor"/>
         </svg>
-        Team Filter
-        """, unsafe_allow_html=True)
+        Filter Teams
+        """,
+                            unsafe_allow_html=True)
 
-        with st.sidebar.expander("", expanded=False):
-            selected_teams = st.multiselect(
-                "Select teams to display",
-                options=all_teams,
-                default=all_teams,
-                key="team_filter"
-            )
+        with st.sidebar.expander("", expanded=True):
+            selected_teams = st.multiselect("Select teams to display",
+                                            options=all_teams,
+                                            default=all_teams,
+                                            key="team_filter")
 
         # Filter team data based on selection
-        filtered_team_data = [team for team in team_data if team['name'] in selected_teams]
+        filtered_team_data = [
+            team for team in team_data if team['name'] in selected_teams
+        ]
 
         points_data = []
         for team in filtered_team_data:
             points_data.append({
-                'team': team['name'],
-                'date': team['matches'][0]['date'] if team['matches'] else None,
-                'points': -team['points_deduction'],
-                'matches_played': 0,
-                'goals_for': 0,
-                'goals_against': 0,
-                'goal_difference': 0
+                'team':
+                team['name'],
+                'date':
+                team['matches'][0]['date'] if team['matches'] else None,
+                'points':
+                -team['points_deduction'],
+                'matches_played':
+                0,
+                'goals_for':
+                0,
+                'goals_against':
+                0,
+                'goal_difference':
+                0
             })
 
             for match in team['matches']:
@@ -242,6 +253,7 @@ def main():
 
         with tab2:
             display_league_table(filtered_team_data)
+
 
 if __name__ == "__main__":
     main()
