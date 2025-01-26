@@ -1,13 +1,9 @@
-import requests
 import pandas as pd
 import streamlit as st
-import os
 from db.database import get_db
 from db.models import League, Match, Team, Standings
 from utils.data_sync import sync_matches, needs_refresh
-from utils.football_api import fetch_matches_from_api
 from utils.dev_mode import is_dev_mode
-from sqlalchemy import text
 
 
 def get_team_data_with_matches(league_id: int, season: int):
@@ -145,3 +141,30 @@ def get_available_leagues():
 def get_available_seasons():
     """Return available seasons for selection"""
     return {"2024": "24/25", "2023": "23/24", "2022": "22/23"}
+
+
+def fetch_head_to_head_from_api(team1, team2):
+    # Get database session
+    db = next(get_db())
+    try:
+        matches = (db.query(Match).filter(
+            Match.status == 'FT', ((Match.home_team_id == team1['id']) &
+                                   (Match.away_team_id == team2['id'])) |
+            ((Match.home_team_id == team2['id']) &
+             (Match.away_team_id == team1['id']))).order_by(
+                 Match.date.desc()).all())
+
+        h2h_matches = []
+        for match in matches:
+            is_team1_home = match.home_team_id == team1['id']
+            h2h_matches.append({
+                'date': match.date,
+                'home_team': team1['name'] if is_team1_home else team2['name'],
+                'away_team': team2['name'] if is_team1_home else team1['name'],
+                'home_score': match.home_score,
+                'away_score': match.away_score
+            })
+
+        return h2h_matches
+    finally:
+        db.close()
