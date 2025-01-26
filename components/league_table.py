@@ -1,5 +1,6 @@
 import streamlit as st
 
+
 def format_form(form_string):
     """Format the form string with colored indicators"""
     if not form_string:
@@ -17,6 +18,7 @@ def format_form(form_string):
         form_html += f'<span style="display: inline-block; text-align: center; width: 32px; color: {color};">{result}</span>'
 
     return form_html
+
 
 def create_sparkline(matches, width=100, height=30):
     """Create a sparkline SVG from match points progression"""
@@ -56,6 +58,7 @@ def create_sparkline(matches, width=100, height=30):
     </svg>
     """
 
+
 def display_league_table(team_data):
     """Display league table with all statistics"""
     if not team_data:
@@ -70,7 +73,7 @@ def display_league_table(team_data):
         reverse=True)
 
     # First, inject the CSS separately
-    st.markdown("""
+    st.html("""
     <style>
     .league-table {
         font-family: monospace;
@@ -154,4 +157,4 @@ def display_league_table(team_data):
     table_html = f'<table class="league-table">{"".join(table_rows)}</table>'
 
     # Render the table
-    st.markdown(table_html, unsafe_allow_html=True)
+    st.html(table_html)
